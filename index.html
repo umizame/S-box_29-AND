@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="me5mvseR6ptdS0BZ_wss6pUWq4Wjj3Tdhz166JAic_w">
+  <title>AES S-box with 29 AND Gates</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+      margin: 2rem;
+      max-width: 72rem;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding: 1rem;
+      background: #f6f8fa;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>AES S-box with 29 AND Gates</h1>
+    <p>This repository contains an AES S-box implemented as a straight-line program using 29 AND gates.</p>
+    <pre id="circuit"></pre>
+  </main>
+  <script>
+    fetch('S-box_29-AND.txt')
+      .then(function (response) { return response.text(); })
+      .then(function (text) { document.getElementById('circuit').textContent = text; });
+  </script>
+</body>
+</html>
