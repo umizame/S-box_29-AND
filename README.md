@@ -2,7 +2,7 @@
 
 This repository contains an AES S-box implemented as a straight-line program using 29 AND gates.
 
-'''
+```text
 # Affine-resynthesized 29-AND straight-line program for the forward AES S-box.
 # U0 and S0 are the most significant bits.
 # Tally: 8 inputs, 8 outputs, 228 gates, 29 AND, 195 XOR, 4 NOT
@@ -244,6 +244,6 @@ XOR t219 t218 t118
 XOR t220 t219 t121
 NOT S7 t220
 end SLP
-'''
 
 end circuit
+```
