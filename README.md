@@ -1,249 +1,140 @@
-# AES S-box with 29 AND Gates
+# A 29-AND Circuit for the AES S-box
 
-This repository contains an AES S-box implemented as a straight-line program using 29 AND gates.
+**Authors (unordered): {GPT-5.6 Pro, [umizame](https://github.com/umizame)}**
+
+This repository gives an explicit one-bit Boolean circuit for the standard forward AES S-box in the NIST basis `{AND, XOR, NOT}`. Its nonlinear schedule is
 
 ```text
-# Affine-resynthesized 29-AND straight-line program for the forward AES S-box.
-# U0 and S0 are the most significant bits.
-# Tally: 8 inputs, 8 outputs, 228 gates, 29 AND, 195 XOR, 4 NOT
-# Depth(Gate): 35; Depth(AND): 6
-
-begin circuit AES-SBOX-FWD-A29
-Inputs: U0:U7
-Outputs: S0:S7
-Internal: t1:t220
-GateSyntax: GateName Output Inputs
-
-begin SLP
-XOR t1 U3 U5
-XOR t2 U0 U6
-XOR t3 U0 U3
-XOR t4 U1 U2
-XOR t5 t4 U7
-XOR t6 t5 U3
-XOR t7 t2 t1
-XOR t8 t5 U0
-XOR t9 t5 U6
-XOR t10 t6 t7
-XOR t11 U4 t7
-XOR t12 t11 U5
-XOR t13 t11 U1
-XOR t14 t12 U7
-XOR t15 t13 t3
-XOR t16 U7 t15
-XOR t17 t4 t15
-XOR t18 t2 t17
-AND t19 t16 t8
-AND t20 t5 t9
-AND t21 t17 t2
-AND t22 t14 t10
-AND t23 t12 t7
-AND t24 U7 t6
-XOR t25 t12 t15
-XOR t26 U5 U6
-AND t27 t25 t26
-XOR t28 t12 t5
-XOR t29 t7 t9
-AND t30 t28 t29
-XOR t31 U7 t17
-XOR t32 t6 t2
-AND t33 t31 t32
-XOR t34 t13 t20
-XOR t35 t34 t21
-XOR t36 t35 t23
-XOR t37 t36 t24
-XOR t38 t37 t27
-XOR t39 t38 t30
-XOR t40 U0 U2
-XOR t41 t18 t22
-XOR t42 t41 t24
-XOR t43 t42 t27
-XOR t44 t43 t30
-AND t45 t39 t44
-XOR t46 t40 t19
-XOR t47 t46 t20
-XOR t48 t47 t22
-XOR t49 t48 t23
-XOR t50 t49 t27
-XOR t51 t50 t33
-XOR t52 U6 t41
-XOR t53 t52 t23
-XOR t54 t53 t30
-XOR t55 t54 t33
-XOR t56 t55 t45
-AND t57 t51 t56
-XOR t58 t39 t51
-XOR t59 t58 t45
-XOR t60 t44 t55
-AND t61 t59 t60
-XOR t62 t45 t61
-AND t63 t55 t62
-XOR t64 t58 t57
-XOR t65 t56 t63
-AND t66 t64 t65
-XOR t67 t44 t63
-XOR t68 t60 t61
-XOR t69 t68 t63
-XOR t70 t39 t57
-XOR t71 t70 t66
-XOR t72 t51 t66
-XOR t73 t8 t17
-XOR t74 t73 t72
-XOR t75 t9 t17
-XOR t76 t75 t5
-XOR t77 t76 t71
-XOR t78 t77 t72
-AND t79 t74 t78
-XOR t80 t75 t72
-XOR t81 t78 t8
-AND t82 t80 t81
-XOR t83 t75 t71
-XOR t84 U0 t64
-AND t85 t83 t84
-XOR t86 t76 t72
-XOR t87 t74 t77
-AND t88 t86 t87
-XOR t89 t64 t73
-AND t90 t77 t89
-XOR t91 t10 t12
-XOR t92 t91 t14
-XOR t93 t92 t67
-XOR t94 t7 t14
-XOR t95 t94 t69
-AND t96 t93 t95
-XOR t97 t7 t12
-XOR t98 t93 t6
-XOR t99 t10 t95
-AND t100 t98 t99
-XOR t101 t98 t69
-XOR t102 t91 t69
-AND t103 t101 t102
-XOR t104 t94 t67
-XOR t105 t92 t95
-AND t106 t104 t105
-XOR t107 t104 t69
-XOR t108 t92 t69
-AND t109 t107 t108
-XOR t110 t74 t93
-XOR t111 t78 t95
-AND t112 t110 t111
-XOR t113 t80 t98
-XOR t114 t81 t99
-AND t115 t113 t114
-XOR t116 t83 t101
-XOR t117 t84 t102
-AND t118 t116 t117
-XOR t119 t86 t104
-XOR t120 t87 t105
-AND t121 t119 t120
-XOR t122 t77 t107
-XOR t123 t89 t108
-AND t124 t122 t123
-XOR t125 t10 t20
-XOR t126 t125 t22
-XOR t127 t126 t23
-XOR t128 t127 t33
-XOR t129 t128 t57
-XOR t130 t129 t61
-XOR t131 t130 t63
-XOR t132 t131 t79
-XOR t133 t132 t82
-XOR t134 t133 t96
-XOR t135 t134 t106
-XOR t136 t135 t115
-XOR S0 t136 t124
-XOR t137 t32 t46
-XOR t138 t137 t21
-XOR t139 t138 t22
-XOR t140 t139 t23
-XOR t141 t140 t33
-XOR t142 t141 t57
-XOR t143 t142 t61
-XOR t144 t143 t63
-XOR t145 t144 t79
-XOR t146 t145 t82
-XOR t147 t146 t85
-XOR t148 t147 t90
-XOR t149 t148 t96
-XOR t150 t149 t100
-XOR t151 t150 t103
-XOR t152 t151 t109
-XOR t153 t152 t115
-XOR t154 t153 t124
-NOT S1 t154
-XOR t155 t19 t20
-XOR t156 t155 t21
-XOR t157 t156 t23
-XOR t158 t157 t24
-XOR t159 t158 t27
-XOR t160 t159 t33
-XOR t161 t160 t61
-XOR t162 t161 t63
-XOR t163 t162 t82
-XOR t164 t163 t88
-XOR t165 t164 t100
-XOR t166 t165 t103
-XOR t167 t166 t112
-XOR t168 t167 t115
-XOR t169 t168 t118
-XOR t170 t169 t124
-NOT S2 t170
-XOR t171 t138 t4
-XOR t172 t171 t24
-XOR t173 t172 t33
-XOR t174 t173 t57
-XOR t175 t174 t61
-XOR t176 t175 t63
-XOR t177 t176 t79
-XOR t178 t177 t82
-XOR t179 t178 t85
-XOR t180 t179 t90
-XOR t181 t180 t96
-XOR t182 t181 t103
-XOR t183 t182 t106
-XOR t184 t183 t109
-XOR t185 t184 t118
-XOR S3 t185 t121
-XOR t186 t12 t132
-XOR t187 t186 t85
-XOR t188 t187 t88
-XOR t189 t188 t90
-XOR t190 t189 t96
-XOR t191 t190 t106
-XOR t192 t191 t118
-XOR S4 t192 t121
-XOR t193 t12 t95
-XOR t194 t193 t82
-XOR t195 t194 t85
-XOR t196 t195 t115
-XOR S5 t196 t118
-XOR t197 t97 t171
-XOR t198 t197 t23
-XOR t199 t198 t30
-XOR t200 t199 t33
-XOR t201 t200 t57
-XOR t202 t201 t96
-XOR t203 t202 t100
-XOR t204 t203 t106
-XOR t205 t204 t109
-XOR t206 t205 t115
-XOR t207 t206 t118
-NOT S6 t207
-XOR t208 t40 U5
-XOR t209 t208 t20
-XOR t210 t209 t23
-XOR t211 t210 t27
-XOR t212 t211 t57
-XOR t213 t212 t82
-XOR t214 t213 t88
-XOR t215 t214 t96
-XOR t216 t215 t100
-XOR t217 t216 t106
-XOR t218 t217 t109
-XOR t219 t218 t118
-XOR t220 t219 t121
-NOT S7 t220
-end SLP
-
-end circuit
+9 early ANDs + 5 middle ANDs + 15 late ANDs = 29 ANDs
 ```
+
+A resynthesized straight-line implementation has
+
+```text
+29 AND + 195 XOR + 4 NOT = 228 instructions
+ordinary gate depth: 35
+AND-depth: 6
+```
+
+Consequently,
+
+```text
+MC(AES S-box) <= 29.
+```
+
+This is a constructive upper bound. No claim that 29 is minimal is made.
+
+## Complete staged certificate
+
+The mathematical construction is recorded by two certificates:
+
+- [`certificates/tower24_witness.txt`](certificates/tower24_witness.txt) contains the 24 products of linear forms and their formal reconstruction masks.
+- [`certificates/staged29_witness.txt`](certificates/staged29_witness.txt) contains the eight input-linear coordinates, the two factors of each of the five recursively available middle AND gates, the four post-middle coordinates, and the eight output masks.
+
+`U0` and `S0` are the most significant input and output bits. A hexadecimal affine mask is interpreted least-significant-mask-bit first in its explicitly declared basis; for example, mask `69` in basis `(U0,...,U7)` means `U0 XOR U3 XOR U5 XOR U6`.
+
+The direct staged proof uses only Python 3:
+
+```sh
+python3 verify/verify_staged29.py
+```
+
+Expected output:
+
+```text
+PASS: staged certificate; 9 early AND + 5 middle AND + 15 late AND = 29 AND
+PASS: all affine masks obey their availability filtration; all 256 FIPS table entries agree
+```
+
+The checker strictly parses both certificates, verifies that no middle factor uses a future middle value, verifies the early/late factor filtration, evaluates the explicitly staged construction for every input byte, and compares all 256 outputs with the literal FIPS 197 forward S-box table.
+
+## Concrete straight-line implementation
+
+The primary SLP is [`circuits/aes-sbox-fwd-g228-a29-d35-ad6.slp`](circuits/aes-sbox-fwd-g228-a29-d35-ad6.slp), with SHA-256 digest
+
+```text
+f41861c4b15bc78840708a5da2fab6ca9dd204c1e3e572cae49912c713bf18d3
+```
+
+Its standalone verifier uses only the Python standard library:
+
+```sh
+python3 verify/minimal_verify.py
+```
+
+Expected output:
+
+```text
+PASS: 228 instructions; 29 AND, 195 XOR, 4 NOT; depth 35; AND-depth 6; all 256 FIPS entries; sha256 f41861c4b15bc78840708a5da2fab6ca9dd204c1e3e572cae49912c713bf18d3
+```
+
+The verifier strictly parses the complete circuit container, declarations, gate grammar, arities, data dependencies, temporary-wire range, and outputs. It checks the exact tally and depths. It independently checks the literal FIPS table against inversion in `GF(2^8)` modulo `x^8+x^4+x^3+x+1` followed by the specified affine map, then evaluates the SLP on all 256 inputs.
+
+## Independent derivation and redundant audit
+
+The archived baseline [`baseline/aes-sbox-fwd-g113-a32-d27-ad6.slp`](baseline/aes-sbox-fwd-g113-a32-d27-ad6.slp) is the exact official NIST SLP byte sequence, with SHA-256 digest
+
+```text
+6ba4f63b832a1f4520a76cab5680e673fdd744ad2651918882eeecff7957698a
+```
+
+Its nonlinear schedule is `9 + 5 + 18 = 32`. The derivation retains the five middle functions and replaces the 27 outer products by the schedule-aware 24-product certificate. [`verify/verify_tower24.py`](verify/verify_tower24.py) derives the required target from the NIST SLP rather than accepting it from the witness. It checks the three exact eight-product `GF(4)` blocks, all formal reconstruction identities on all `2^12 = 4096` coordinate assignments, and the actual sequential realization on all 256 AES inputs.
+
+The complete redundant audit is
+
+```sh
+./verify/run_all.sh
+```
+
+It includes scalar, bit-parallel, and C99 evaluation; FIPS algebraic/table agreement; strict structural checks; malformed-circuit rejection under normal and optimized Python; XAG normalization; equality of the two SLP nonlinear normal forms; the exact `GF(4)` identity; the formal and staged NIST bridge; the restricted ancillary rank enumeration; and deterministic reconstruction.
+
+## Deterministic reconstruction
+
+The readable circuit is
+
+```text
+circuits/aes-sbox-fwd-g455-a29-d35-ad6-transparent.slp
+```
+
+The transparent builder consumes the fixed product and staged certificates. It verifies every staged mask against the archived NIST truth tables before emitting the circuit; it does not discover or silently replace the published affine formulas during the build. The affine resynthesizer changes only the affine network and formally preserves every ordered AND-factor mask and every output mask.
+
+Rebuild the transparent SLP, resynthesize the primary SLP, regenerate the normalized XAG, and run the full audit with
+
+```sh
+make rebuild
+```
+
+## Paper and GitHub Pages
+
+The canonical paper source is [`article/article.tex`](article/article.tex). It contains the exact NIST/FIPS problem statement, a self-contained definition of the 29-AND construction, the proof, the complete decomposition, all 256 evaluated outputs, the formal bridge, the normalized XAG, and a standalone verifier listing.
+
+The build order is canonical TeX source to PDF, followed by HTML generation from the same expanded TeX source:
+
+```sh
+make article
+```
+
+This produces [`article/article.pdf`](article/article.pdf) and [`docs/index.html`](docs/index.html). The latter is a mathematical GitHub Pages rendering of the paper, not a separate informal article. The release audit checks generated appendices, bibliography, cross-references, PDF metadata and layout conditions, HTML links and anchors, exact public artifact copies, fixed digests, and the release manifest:
+
+```sh
+make audit
+```
+
+## Repository layout
+
+- `circuits/` — primary and readable 29-AND SLPs
+- `certificates/` — staged construction, 24-product witness, and normalized XAG
+- `verify/` — scalar, structural, bit-parallel, C99, XAG, staged, identity, and bridge verifiers
+- `construction/` — deterministic transparent construction and affine resynthesis
+- `search/` — ancillary restricted exact rank calculation
+- `baseline/` — exact official NIST 32-AND SLP used for provenance
+- `article/` — canonical TeX source, generated mathematical appendices, bibliography, CSL, and PDF
+- `docs/` — complete GitHub Pages paper and byte-identical public artifacts
+- `tools/` — paper/site generation, release checks, manifest handling, and deterministic ZIP creation
+
+## Primary sources
+
+- NIST Circuit Complexity: <https://csrc.nist.gov/projects/circuit-complexity>
+- NIST list of circuits: <https://csrc.nist.gov/projects/circuit-complexity/list-of-circuits>
+- Official NIST 32-AND SLP: <https://github.com/usnistgov/Circuits/blob/master/data/slp/aes/aes-sbox-fwd-g113-a32-d27-ad6.slp>
+- FIPS 197-upd1: <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf>

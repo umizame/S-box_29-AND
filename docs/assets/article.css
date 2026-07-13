@@ -1,0 +1,211 @@
+:root {
+  color-scheme: light;
+  --ink: #202124;
+  --muted: #5f6368;
+  --line: #d8dadd;
+  --soft-line: #eceeef;
+  --paper: #ffffff;
+  --page: #f4f5f6;
+  --link: #174ea6;
+  --code: #f7f7f8;
+  --accent: #eef3fb;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--page);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.62;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--link); text-decoration-thickness: 0.075em; text-underline-offset: 0.14em; }
+a:hover { text-decoration-thickness: 0.12em; }
+
+.artifact-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid #cfd3d8;
+  background: rgba(255, 255, 255, 0.97);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.84rem;
+  backdrop-filter: blur(8px);
+}
+.artifact-bar-inner {
+  max-width: 58rem;
+  margin: 0 auto;
+  padding: 0.58rem 1.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.38rem 0.62rem;
+}
+
+.paper {
+  width: min(100% - 2rem, 58rem);
+  margin: 2rem auto 4rem;
+  padding: 4rem 4.6rem 3.5rem;
+  background: var(--paper);
+  border: 1px solid #e0e2e5;
+  box-shadow: 0 10px 34px rgba(32, 33, 36, 0.08);
+}
+
+.paper-header { text-align: center; margin-bottom: 2.4rem; }
+.paper-header h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  line-height: 1.16;
+  letter-spacing: -0.025em;
+}
+.paper-header .author, .paper-header .date { margin: 0.25rem 0; }
+.paper-header .date { color: var(--muted); font-size: 0.95rem; }
+
+.abstract {
+  margin: 0 0 2.4rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--line);
+  background: #fcfcfc;
+}
+.abstract h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  text-align: center;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+}
+.abstract p { margin: 0.7rem 0; }
+
+.toc {
+  margin: 0 0 3rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.89rem;
+  line-height: 1.45;
+}
+.toc h2 { margin: 0 0 0.65rem; font-size: 1rem; letter-spacing: 0.03em; }
+.toc ul { margin: 0.25rem 0; padding-left: 1.35rem; }
+.toc li { margin: 0.18rem 0; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+.paper-body > h1 {
+  margin: 3.2rem 0 1.15rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 1.64rem;
+  line-height: 1.25;
+}
+.paper-body > h1:first-child { margin-top: 0; }
+.paper-body h2 {
+  margin: 2.2rem 0 0.75rem;
+  font-size: 1.22rem;
+  line-height: 1.3;
+}
+.header-section-number, .toc-section-number { font-variant-numeric: tabular-nums; }
+.header-section-number { margin-right: 0.42rem; }
+
+p { margin: 0.85rem 0; }
+ul, ol { padding-left: 1.55rem; }
+li { margin: 0.28rem 0; }
+.center { text-align: center; }
+
+.theorem, .proposition, .lemma, .corollary, .definition, .remark {
+  margin: 1.35rem 0;
+  padding: 1rem 1.15rem;
+  border-left: 4px solid #7d91ad;
+  background: var(--accent);
+}
+.theorem p:first-child, .proposition p:first-child, .lemma p:first-child,
+.corollary p:first-child, .definition p:first-child, .remark p:first-child { margin-top: 0; }
+.theorem p:last-child, .proposition p:last-child, .lemma p:last-child,
+.corollary p:last-child, .definition p:last-child, .remark p:last-child { margin-bottom: 0; }
+.proof {
+  margin: 1rem 0 1.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--line);
+}
+
+.math.display { display: block; overflow-x: auto; overflow-y: hidden; padding: 0.4rem 0; }
+.equation-anchor { display: block; position: relative; top: -4rem; visibility: hidden; }
+
+code, pre, kbd, samp {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.86em;
+}
+code {
+  overflow-wrap: anywhere;
+  padding: 0.08em 0.22em;
+  border-radius: 3px;
+  background: var(--code);
+}
+pre {
+  max-width: 100%;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: var(--code);
+  line-height: 1.42;
+}
+pre code { padding: 0; background: transparent; overflow-wrap: normal; }
+.sourceCode { max-width: 100%; }
+.sourceCode a { color: inherit; text-decoration: none; }
+.listing-caption {
+  margin: 1.3rem 0 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.listing-caption + .sourceCode { margin-top: 0; }
+
+.table-wrap { width: 100%; margin: 1.35rem 0 1.8rem; overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+caption { margin: 0 0 0.65rem; text-align: left; font-size: 0.92rem; }
+th, td { padding: 0.4rem 0.48rem; border-bottom: 1px solid var(--soft-line); vertical-align: top; }
+th { border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--ink); font-weight: 600; }
+tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); }
+td code, th code { white-space: nowrap; overflow-wrap: normal; background: transparent; padding: 0; }
+
+#refs { margin-top: 1rem; overflow-wrap: anywhere; }
+.csl-entry { margin: 0.75rem 0; }
+.csl-left-margin { min-width: 2.5em; }
+
+.paper-footer {
+  margin-top: 3.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.8rem;
+}
+
+[id] { scroll-margin-top: 4.25rem; }
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .paper { width: 100%; margin: 0; padding: 2.4rem 1.15rem 3rem; border: 0; box-shadow: none; }
+  .artifact-bar { position: static; }
+  .paper-body > h1 { font-size: 1.42rem; }
+  .abstract, .toc { padding: 1rem; }
+  table { font-size: 0.78rem; }
+}
+
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .artifact-bar, .paper-footer { display: none; }
+  .paper { width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; }
+  a { color: inherit; text-decoration: none; }
+  .theorem, .proposition, .lemma, .corollary, .definition, .remark { background: transparent; }
+}

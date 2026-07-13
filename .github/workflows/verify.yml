@@ -1,0 +1,30 @@
+name: Verify certificates, paper sources, and site
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Pandoc for the canonical TeX-to-HTML check
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+      - name: Run the complete finite audit
+        run: ./verify/run_all.sh
+      - name: Check generated LaTeX appendices
+        run: python3 tools/build_article_sources.py --check
+      - name: Check the generated GitHub Pages paper
+        run: python3 tools/build_site.py --check
+      - name: Check release integrity
+        run: python3 tools/check_release.py

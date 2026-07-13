@@ -1,0 +1,35 @@
+AES29-STAGED 1
+# Coordinate masks use bits U0,...,U7 in order; U0 is the most significant input bit.
+COORD L0 69
+COORD L1 e7
+COORD L2 41
+COORD L3 c6
+COORD R0 59
+COORD R1 d9
+COORD R2 74
+COORD R3 86
+# Early product order in the middle-stage affine basis.
+EARLY P01 P02 P03 P09 P10 P11 P17 P18 P19
+# Middle masks use basis (1,U0,...,U7,P01,P02,P03,P09,P10,P11,P17,P18,P19,M1,...,M5).
+# For Mk, bits belonging to Mk or a later middle output must be zero.
+MIDDLE M1 1ecf6 1d06a
+MIDDLE M2 2b60a 730ea
+MIDDLE M3 75afc 2e080
+MIDDLE M4 0330ea 140000
+MIDDLE M5 0b5afc 2730ea
+POST Z0 21d06a
+POST Z1 32e080
+POST Z2 49ecf6
+POST Z3 42b60a
+# Late product order appended to the output affine basis.
+LATE P04 P05 P06 P07 P08 P12 P13 P14 P15 P16 P20 P21 P22 P23 P24
+# Output masks use the middle basis above, followed by the listed late products.
+OUTPUT S0 2491ba35ce
+OUTPUT S1 257bba3b95
+OUTPUT S2 2e6532ee01
+OUTPUT S3 19dbba4b98
+OUTPUT S4 189eba357c
+OUTPUT S5 0c0332e152
+OUTPUT S6 0db00b2bf9
+OUTPUT S7 19b508a44b
+END

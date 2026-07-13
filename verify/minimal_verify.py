@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""Standalone exhaustive verifier for the released 29-AND AES S-box SLP.
+
+Only the Python standard library is used.  The checker strictly parses the
+complete circuit container, verifies all data dependencies and exact gate
+counts, independently checks the literal FIPS 197 table against the algebraic
+S-box definition, and evaluates the circuit on every one of the 256 inputs.
+U0 and S0 are the most significant bits.
+"""
+from __future__ import annotations
+
+from collections import Counter
+from pathlib import Path
+import hashlib
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT = ROOT / "circuits" / "aes-sbox-fwd-g228-a29-d35-ad6.slp"
+DEFAULT_SHA256 = "f41861c4b15bc78840708a5da2fab6ca9dd204c1e3e572cae49912c713bf18d3"
+FIPS_SBOX = (
+    0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
+    0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
+    0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
+    0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75,
+    0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,
+    0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf,
+    0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8,
+    0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2,
+    0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73,
+    0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb,
+    0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79,
+    0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08,
+    0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
+    0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
+    0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
+    0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16,
+)
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit(f"FAIL: {message}")
+
+
+def gf256_mul(a: int, b: int) -> int:
+    result = 0
+    for _ in range(8):
+        if b & 1:
+            result ^= a
+        a = ((a << 1) & 0xFF) ^ (0x1B if a & 0x80 else 0)
+        b >>= 1
+    return result
+
+
+def aes_sbox_algebraic(x: int) -> int:
+    inverse = 0
+    if x:
+        inverse, base, exponent = 1, x, 254
+        while exponent:
+            if exponent & 1:
+                inverse = gf256_mul(inverse, base)
+            base = gf256_mul(base, base)
+            exponent >>= 1
+    output = 0
+    for i in range(8):
+        bit = (
+            ((inverse >> i) & 1)
+            ^ ((inverse >> ((i + 4) & 7)) & 1)
+            ^ ((inverse >> ((i + 5) & 7)) & 1)
+            ^ ((inverse >> ((i + 6) & 7)) & 1)
+            ^ ((inverse >> ((i + 7) & 7)) & 1)
+            ^ ((0x63 >> i) & 1)
+        )
+        output |= bit << i
+    return output
+
+
+def parse(path: Path) -> tuple[list[tuple[str, str, str, str | None]], tuple[str, ...], tuple[str, ...]]:
+    operations: list[tuple[str, str, str, str | None]] = []
+    inputs = tuple(f"U{i}" for i in range(8))
+    outputs = tuple(f"S{i}" for i in range(8))
+    state = "start"
+    saw_inputs = saw_outputs = saw_internal = saw_syntax = False
+    internal_count: int | None = None
+
+    for lineno, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+
+        if state == "start":
+            require(re.fullmatch(r"begin circuit [A-Za-z0-9_-]+", line) is not None,
+                    f"expected begin circuit at line {lineno}")
+            state = "header"
+            continue
+
+        if state == "header":
+            if line == "Inputs: U0:U7":
+                require(not saw_inputs, f"duplicate input declaration at line {lineno}")
+                saw_inputs = True
+                continue
+            if line == "Outputs: S0:S7":
+                require(saw_inputs and not saw_outputs, f"misordered or duplicate output declaration at line {lineno}")
+                saw_outputs = True
+                continue
+            match = re.fullmatch(r"Internal: t1:t([1-9][0-9]*)", line)
+            if match:
+                require(saw_outputs and not saw_internal, f"misordered or duplicate internal declaration at line {lineno}")
+                internal_count = int(match.group(1))
+                saw_internal = True
+                continue
+            if line == "GateSyntax: GateName Output Inputs":
+                require(saw_internal and not saw_syntax, f"misordered or duplicate gate syntax at line {lineno}")
+                saw_syntax = True
+                continue
+            if line == "begin SLP":
+                require(saw_inputs and saw_outputs and saw_internal and saw_syntax,
+                        f"incomplete circuit header before line {lineno}")
+                state = "slp"
+                continue
+            require(False, f"unexpected circuit-header line {lineno}: {line}")
+
+        if state == "slp":
+            if line == "end SLP":
+                state = "after_slp"
+                continue
+            fields = line.split()
+            if len(fields) == 4 and fields[0] in {"XOR", "AND"}:
+                operations.append((fields[0], fields[1], fields[2], fields[3]))
+            elif len(fields) == 3 and fields[0] == "NOT":
+                operations.append((fields[0], fields[1], fields[2], None))
+            else:
+                require(False, f"illegal instruction at line {lineno}: {line}")
+            continue
+
+        if state == "after_slp":
+            require(line == "end circuit", f"expected end circuit at line {lineno}")
+            state = "done"
+            continue
+
+        require(False, f"trailing non-comment data at line {lineno}: {line}")
+
+    require(state == "done", "missing or unbalanced circuit/SLP delimiters")
+    require(internal_count is not None, "missing internal-wire declaration")
+    require(bool(operations), "empty SLP")
+
+    defined = set(inputs)
+    temporary_outputs: set[str] = set()
+    for kind, output, a, b in operations:
+        require(output not in defined, f"wire redefinition: {output}")
+        require(a in defined, f"use before definition: {a}")
+        require(b is None or b in defined, f"use before definition: {b}")
+        require(re.fullmatch(r"t[1-9][0-9]*|S[0-7]", output) is not None,
+                f"undeclared output-wire name: {output}")
+        if output.startswith("t"):
+            number = int(output[1:])
+            require(1 <= number <= internal_count, f"temporary outside declared range: {output}")
+            temporary_outputs.add(output)
+        defined.add(output)
+
+    declared_temporaries = {f"t{i}" for i in range(1, internal_count + 1)}
+    require(temporary_outputs == declared_temporaries, "declared and defined temporary-wire sets differ")
+    require(all(name in defined for name in outputs), "missing output wire")
+    return operations, inputs, outputs
+
+
+def evaluate(operations: list[tuple[str, str, str, str | None]], inputs: tuple[str, ...], outputs: tuple[str, ...], x: int) -> int:
+    wire = {name: (x >> (7 - i)) & 1 for i, name in enumerate(inputs)}
+    for kind, output, a, b in operations:
+        if kind == "XOR":
+            wire[output] = wire[a] ^ wire[b]  # type: ignore[index]
+        elif kind == "AND":
+            wire[output] = wire[a] & wire[b]  # type: ignore[index]
+        else:
+            wire[output] = wire[a] ^ 1
+    return sum(wire[name] << (7 - i) for i, name in enumerate(outputs))
+
+
+def depths(operations: list[tuple[str, str, str, str | None]], inputs: tuple[str, ...], outputs: tuple[str, ...]) -> tuple[int, int]:
+    gate_depth = {name: 0 for name in inputs}
+    and_depth = dict(gate_depth)
+    for kind, output, a, b in operations:
+        operands = (a,) if b is None else (a, b)
+        gate_depth[output] = 1 + max(gate_depth[name] for name in operands)
+        and_depth[output] = max(and_depth[name] for name in operands) + (1 if kind == "AND" else 0)
+    return max(gate_depth[name] for name in outputs), max(and_depth[name] for name in outputs)
+
+
+def main() -> None:
+    require(len(sys.argv) <= 2, "usage: minimal_verify.py [circuit.slp]")
+    path = Path(sys.argv[1]) if len(sys.argv) == 2 else DEFAULT
+    operations, inputs, outputs = parse(path)
+
+    counts = Counter(kind for kind, _, _, _ in operations)
+    expected_counts = Counter({"AND": 29, "XOR": 195, "NOT": 4})
+    require(counts == expected_counts, f"unexpected operation tally: {dict(counts)}")
+    require(len(operations) == 228, f"expected exactly 228 instructions, found {len(operations)}")
+    require(depths(operations, inputs, outputs) == (35, 6), "unexpected ordinary depth or AND-depth")
+
+    for x, table_value in enumerate(FIPS_SBOX):
+        algebraic = aes_sbox_algebraic(x)
+        require(algebraic == table_value,
+                f"FIPS algebraic definition and literal table disagree at {x:02x}: {algebraic:02x} != {table_value:02x}")
+        obtained = evaluate(operations, inputs, outputs, x)
+        require(obtained == table_value,
+                f"input {x:02x}: obtained {obtained:02x}, expected {table_value:02x}")
+
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if path.resolve() == DEFAULT.resolve():
+        require(digest == DEFAULT_SHA256, f"default certificate SHA-256 mismatch: {digest}")
+    print(
+        "PASS: "
+        f"{len(operations)} instructions; {counts['AND']} AND, {counts['XOR']} XOR, "
+        f"{counts['NOT']} NOT; depth 35; AND-depth 6; all 256 FIPS entries; sha256 {digest}"
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,2370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="me5mvseR6ptdS0BZ_wss6pUWq4Wjj3Tdhz166JAic_w" />
+  <title>A 29-AND Circuit for the AES S-box</title>
+  <meta name="description" content="An explicit 29-AND straight-line program for the forward AES S-box, with exhaustive verification and a complete construction certificate.">
+  <meta name="citation_title" content="A 29-AND Circuit for the AES S-box">
+  <meta name="citation_author" content="GPT-5.6 Pro">
+  <meta name="citation_author" content="umizame">
+  <meta name="citation_publication_date" content="2026/07/12">
+  <meta name="citation_pdf_url" content="files/article.pdf">
+  <link rel="stylesheet" href="assets/article.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        tags: 'ams'
+      },
+      chtml: {scale: 0.96},
+      options: {enableMenu: false}
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <main class="paper">
+    <header class="paper-header">
+      <h1><strong>A 29-AND Circuit for the AES S-box</strong></h1>
+      <p class="author"><strong>Authors (unordered):</strong> {GPT-5.6
+Pro, <a href="https://github.com/umizame">umizame</a>}</p>
+      <p class="date">12 July 2026</p>
+    </header>
+    <section class="abstract" id="abstract">
+      <h2>Abstract</h2>
+      <p>The NIST Circuit Complexity project defines multiplicative
+      complexity in a one-bit Boolean-circuit model and lists a forward
+      AES S-box circuit with 32 AND gates. We give a completely explicit
+      construction with 29 AND gates. The construction is specified by
+      eight input-linear coordinates, 24 products of linear forms, five
+      intervening products whose factors are given recursively, four
+      post-middle coordinates, and eight affine output expressions. Nine
+      of the 24 outer products are available before the five middle
+      products and fifteen are available afterward, giving the legal
+      nonlinear schedule <span
+      class="math display">\[9+5+15=29.\]</span> The complete formulas
+      and the complete 256-entry evaluation table are included. The
+      latter agrees entry by entry with the forward S-box in FIPS 197.
+      Hence the construction proves <span
+      class="math inline">\(\operatorname{MC}(\operatorname{AES\mbox{-}Sbox})\leq
+      29.\)</span> A concrete straight-line implementation has 29 AND,
+      195 XOR, and 4 NOT instructions, ordinary gate depth 35, and
+      AND-depth 6. Independent verifiers check the staged formulas, the
+      FIPS algebraic definition and table, the implementation grammar
+      and dependencies, a normalized XOR–AND graph, the derivation from
+      the official 32-AND NIST program, and deterministic
+      reconstruction. The result is an upper bound only; no minimality
+      claim is made.</p>
+    </section>
+    <nav id="TOC" class="toc" aria-label="Contents">
+      <h2>Contents</h2>
+      <ul>
+      <li><a href="#sec:problem" id="toc-sec:problem"><span
+      class="toc-section-number">1</span> Problem statement and exact
+      conventions</a>
+      <ul>
+      <li><a href="#nist-circuit-model-and-multiplicative-complexity"
+      id="toc-nist-circuit-model-and-multiplicative-complexity"><span
+      class="toc-section-number">1.1</span> NIST circuit model and
+      multiplicative complexity</a></li>
+      <li><a href="#the-fips-197-function"
+      id="toc-the-fips-197-function"><span
+      class="toc-section-number">1.2</span> The FIPS 197
+      function</a></li>
+      <li><a href="#hexadecimal-mask-notation"
+      id="toc-hexadecimal-mask-notation"><span
+      class="toc-section-number">1.3</span> Hexadecimal mask
+      notation</a></li>
+      </ul></li>
+      <li><a href="#sec:construction" id="toc-sec:construction"><span
+      class="toc-section-number">2</span> The explicit staged 29-AND
+      construction</a>
+      <ul>
+      <li><a href="#input-linear-coordinates-and-the-24-outer-products"
+      id="toc-input-linear-coordinates-and-the-24-outer-products"><span
+      class="toc-section-number">2.1</span> Input-linear coordinates and
+      the 24 outer products</a></li>
+      <li><a href="#five-recursively-available-middle-products"
+      id="toc-five-recursively-available-middle-products"><span
+      class="toc-section-number">2.2</span> Five recursively available
+      middle products</a></li>
+      <li><a href="#post-middle-coordinates-late-products-and-outputs"
+      id="toc-post-middle-coordinates-late-products-and-outputs"><span
+      class="toc-section-number">2.3</span> Post-middle coordinates,
+      late products, and outputs</a></li>
+      </ul></li>
+      <li><a href="#sec:correctness" id="toc-sec:correctness"><span
+      class="toc-section-number">3</span> Correctness and the
+      multiplicative-complexity bound</a></li>
+      <li><a href="#sec:baseline" id="toc-sec:baseline"><span
+      class="toc-section-number">4</span> Independent derivation from
+      the official NIST circuit</a></li>
+      <li><a href="#sec:gf4" id="toc-sec:gf4"><span
+      class="toc-section-number">5</span> An eight-product identity over
+      <span class="math inline">\(\mathbb F_4\)</span></a></li>
+      <li><a href="#sec:formal" id="toc-sec:formal"><span
+      class="toc-section-number">6</span> Formal quadratic
+      bridge</a></li>
+      <li><a href="#sec:verification" id="toc-sec:verification"><span
+      class="toc-section-number">7</span> Verification
+      separation</a></li>
+      <li><a href="#sec:conclusion" id="toc-sec:conclusion"><span
+      class="toc-section-number">8</span> Conclusion</a></li>
+      <li><a href="#app:decomposition" id="toc-app:decomposition"><span
+      class="toc-section-number">A</span> Complete staged
+      decomposition</a>
+      <ul>
+      <li><a href="#input-linear-coordinates"
+      id="toc-input-linear-coordinates"><span
+      class="toc-section-number">9.1</span> Input-linear
+      coordinates</a></li>
+      <li><a href="#five-retained-middle-products"
+      id="toc-five-retained-middle-products"><span
+      class="toc-section-number">9.2</span> Five retained middle
+      products</a></li>
+      <li><a href="#post-middle-coordinates"
+      id="toc-post-middle-coordinates"><span
+      class="toc-section-number">9.3</span> Post-middle
+      coordinates</a></li>
+      <li><a href="#output-reconstruction"
+      id="toc-output-reconstruction"><span
+      class="toc-section-number">9.4</span> Output
+      reconstruction</a></li>
+      <li><a href="#formal-target-and-reconstruction-masks"
+      id="toc-formal-target-and-reconstruction-masks"><span
+      class="toc-section-number">9.5</span> Formal target and
+      reconstruction masks</a></li>
+      </ul></li>
+      <li><a href="#app:finite" id="toc-app:finite"><span
+      class="toc-section-number">B</span> Complete finite evaluation
+      and normalized graph</a>
+      <ul>
+      <li><a href="#normalized-xorand-graph"
+      id="toc-normalized-xorand-graph"><span
+      class="toc-section-number">10.1</span> Normalized XOR–AND
+      graph</a></li>
+      </ul></li>
+      <li><a href="#app:artifacts" id="toc-app:artifacts"><span
+      class="toc-section-number">C</span> Repository artifacts and
+      standalone verification</a>
+      <ul>
+      <li><a href="#standalone-exhaustive-implementation-verifier"
+      id="toc-standalone-exhaustive-implementation-verifier"><span
+      class="toc-section-number">11.1</span> Standalone exhaustive
+      implementation verifier</a></li>
+      </ul></li>
+      <li><a href="#bibliography"
+      id="toc-bibliography">References</a></li>
+      </ul>
+    </nav>
+    <article class="paper-body">
+<h1 data-number="1" id="sec:problem"><span
+class="header-section-number">1</span> Problem statement and exact
+conventions</h1>
+<h2 data-number="1.1"
+id="nist-circuit-model-and-multiplicative-complexity"><span
+class="header-section-number">1.1</span> NIST circuit model and
+multiplicative complexity</h2>
+<p>NIST defines the multiplicative size of a Boolean circuit as the
+number of its nonlinear gates and the multiplicative complexity of a
+Boolean or vectorial Boolean function as the minimum multiplicative size
+among circuits computing it. The NIST circuit collection uses the
+one-bit basis <span
+class="math inline">\(\{\mathrm{AND},\mathrm{XOR},\mathrm{NOT}\}\)</span>
+for this problem <span class="citation"
+data-cites="nistCircuitComplexity"><a href="#ref-nistCircuitComplexity"
+role="doc-biblioref">[1]</a></span>. Over <span
+class="math inline">\(\mathbb F_2\)</span>, XOR and NOT are affine and
+AND is nonlinear; therefore multiplicative size in this basis is exactly
+the number of AND gates.</p>
+<p>For the forward AES S-box, NIST lists a circuit with 32 AND gates and
+81 XOR/XNOR gates, 113 gates in total, ordinary depth 27, and AND-depth
+6 <span class="citation" data-cites="nistCircuitList"><a
+href="#ref-nistCircuitList" role="doc-biblioref">[2]</a></span>. The
+corresponding official straight-line program contains 32 AND, 77 XOR,
+and 4 XNOR instructions <span class="citation"
+data-cites="nistAES32SLP"><a href="#ref-nistAES32SLP"
+role="doc-biblioref">[3]</a></span>. NIST asks whether fewer than 32
+nonlinear gates suffice <span class="citation"
+data-cites="nistCircuitComplexity"><a href="#ref-nistCircuitComplexity"
+role="doc-biblioref">[1]</a></span>. The theorem proved below supplies a
+29-AND upper bound.</p>
+<div id="def:circuit-model" class="definition">
+<p><strong>Definition 1</strong> (Circuit model). A circuit in this
+paper has eight input bits, arbitrary fan-out, and one-bit gates of the
+forms <span class="math display">\[a\oplus b,\qquad a\wedge b,\qquad
+1\oplus a.\]</span> Every gate input must be either an external input or
+the output of an earlier gate. The multiplicative size is the number of
+<span class="math inline">\(\wedge\)</span>-gates. The multiplicative
+complexity <span class="math inline">\(\operatorname{MC}(F)\)</span> is
+the minimum multiplicative size over all such circuits computing <span
+class="math inline">\(F\)</span>.</p>
+</div>
+<h2 data-number="1.2" id="the-fips-197-function"><span
+class="header-section-number">1.2</span> The FIPS 197 function</h2>
+<p>Write an external byte as <span
+class="math display">\[x=(U_0U_1\cdots
+U_7)_2=\sum_{j=0}^{7}U_j2^{7-j},\]</span> so <span
+class="math inline">\(U_0\)</span> is the most significant bit. For the
+polynomial representation, write instead <span
+class="math inline">\(x=\sum_{i=0}^{7}b_i2^i\)</span> and associate the
+polynomial <span class="math inline">\(\sum_{i=0}^{7}b_iX^i\)</span>.
+FIPS 197 defines the forward S-box by inversion in <span id="eq:aes-field" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[\mathbb F_2[X]/(X^8+X^4+X^3+X+1),
+\label{eq:aes-field}\]</span> with zero mapped to zero, followed by an
+affine map with constant byte <code>63</code> <span class="citation"
+data-cites="fips197"><a href="#ref-fips197"
+role="doc-biblioref">[4]</a></span>. If <span
+class="math inline">\(y_i\)</span> are the least-significant-bit-first
+coefficients of the inverse, then <span id="eq:fips-affine" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[s_i=y_i\oplus y_{i+4}\oplus y_{i+5}\oplus
+y_{i+6}\oplus y_{i+7}\oplus c_i,
+\qquad c=\texttt{63},
+\label{eq:fips-affine}\]</span> where subscripts are reduced modulo 8.
+The external output notation is <span
+class="math inline">\(\operatorname{AES\mbox{-}Sbox}(x)=(S_0S_1\cdots
+S_7)_2\)</span>, with <span class="math inline">\(S_0=s_7\)</span> and
+<span class="math inline">\(S_7=s_0\)</span>. FIPS 197 also prints all
+256 output bytes in its S-box table. Both descriptions are checked
+independently in the verification described below.</p>
+<h2 data-number="1.3" id="hexadecimal-mask-notation"><span
+class="header-section-number">1.3</span> Hexadecimal mask notation</h2>
+<div id="def:masks" class="definition">
+<p><strong>Definition 2</strong> (Affine masks). For an ordered tuple of
+bits <span class="math inline">\(B=(b_0,\ldots,b_{r-1})\)</span> and an
+integer <span class="math inline">\(m=\sum_{j=0}^{r-1}m_j2^j\)</span>,
+define <span id="eq:mask" class="equation-anchor" aria-hidden="true"></span><span class="math display">\[\left\langle
+m\right\rangle_{B}=\bigoplus_{j:m_j=1}b_j.
+  \label{eq:mask}\]</span> Masks are printed in hexadecimal. Thus the
+least significant bit of the <em>mask</em> selects the first member of
+the declared tuple; this convention is independent of whether a byte bit
+is most or least significant.</p>
+</div>
+<p>For example, with <span
+class="math inline">\(B_U=(U_0,\ldots,U_7)\)</span>, <span
+class="math display">\[\left\langle
+\mathtt{69}\right\rangle_{B_U}=U_0\oplus U_3\oplus U_5\oplus
+U_6.\]</span> This convention makes every formula below unambiguous and
+directly machine-checkable.</p>
+<h1 data-number="2" id="sec:construction"><span
+class="header-section-number">2</span> The explicit staged 29-AND
+construction</h1>
+<p>This section defines a Boolean map <span
+class="math inline">\(C_{29}:\mathbb F_2^8\to\mathbb F_2^8\)</span>
+without reference to any previous circuit. Every affine expression is
+specified by a mask, and every nonlinear operation is displayed as one
+product of two affine expressions.</p>
+<h2 data-number="2.1"
+id="input-linear-coordinates-and-the-24-outer-products"><span
+class="header-section-number">2.1</span> Input-linear coordinates and
+the 24 outer products</h2>
+<p>Let <span class="math display">\[B_U=(U_0,U_1,\ldots,U_7).\]</span>
+Define <span
+class="math inline">\(L_0,\ldots,L_3,R_0,\ldots,R_3\)</span> by the
+eight masks in table <a href="#tab:coordinates">2</a>. These are linear
+functions of the input and require no AND gate.</p>
+<p>Eventually there will also be four bits <span
+class="math inline">\(Z_0,\ldots,Z_3\)</span>. Put <span id="eq:coordinate-basis" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[B_C=(L_0,L_1,L_2,L_3,R_0,R_1,R_2,R_3,Z_0,Z_1,Z_2,Z_3).
+\label{eq:coordinate-basis}\]</span> For each row <span
+class="math inline">\((u_j,v_j)\)</span> of table <a
+href="#tab:products">1</a>, define <span id="eq:outer-products" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[P_j=\left\langle
+u_j\right\rangle_{B_C}\wedge\left\langle v_j\right\rangle_{B_C}.
+  \label{eq:outer-products}\]</span> The nine products <span id="eq:early-products" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[E=(P_{01},P_{02},P_{03},P_{09},P_{10},P_{11},P_{17},P_{18},P_{19})
+\label{eq:early-products}\]</span> have zero coefficients on all four
+<span class="math inline">\(Z\)</span>-coordinates, as is visible
+directly from their factor masks. They can therefore be computed
+immediately after <span class="math inline">\(L\)</span> and <span
+class="math inline">\(R\)</span>. The other fifteen products are
+deferred until <span class="math inline">\(Z\)</span> has been
+defined.</p>
+<h2 data-number="2.2"
+id="five-recursively-available-middle-products"><span
+class="header-section-number">2.2</span> Five recursively available
+middle products</h2>
+<p>Use the padded ordered tuple <span id="eq:middle-basis" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[B_M=(1,U_0,\ldots,U_7,E,M_1,M_2,M_3,M_4,M_5).
+\label{eq:middle-basis}\]</span> For <span
+class="math inline">\(k=1,\ldots,5\)</span>, the row for <span
+class="math inline">\(M_k\)</span> in table <a
+href="#tab:middle-factors">3</a> contains two masks <span
+class="math inline">\(a_k,b_k\)</span>. Define recursively <span id="eq:middle-products" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[M_k=\left\langle
+a_k\right\rangle_{B_M}\wedge\left\langle b_k\right\rangle_{B_M}.
+  \label{eq:middle-products}\]</span> Every coefficient on <span
+class="math inline">\(M_k,M_{k+1},\ldots,M_5\)</span> is zero in that
+row. Consequently the right side of equation <a
+href="#eq:middle-products">(8)</a> uses only the constant, inputs, the
+nine already-computed products in <span
+class="math inline">\(E\)</span>, and earlier middle values <span
+class="math inline">\(M_1,\ldots,M_{k-1}\)</span>. The recursion is
+therefore a legal straight-line schedule rather than a simultaneous or
+circular definition.</p>
+<h2 data-number="2.3"
+id="post-middle-coordinates-late-products-and-outputs"><span
+class="header-section-number">2.3</span> Post-middle coordinates, late
+products, and outputs</h2>
+<p>After <span class="math inline">\(M_5\)</span> has been computed,
+define <span class="math inline">\(Z_0,\ldots,Z_3\)</span> by the four
+masks in table <a href="#tab:post-coordinates">4</a>, all interpreted in
+<span class="math inline">\(B_M\)</span>. The full coordinate tuple
+<span class="math inline">\(B_C\)</span> in equation <a
+href="#eq:coordinate-basis">(4)</a> is then available, so the remaining
+fifteen rows of table <a href="#tab:products">1</a> define the late
+products <span id="eq:late-products" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[D=(P_{04},P_{05},P_{06},P_{07},P_{08},P_{12},P_{13},P_{14},P_{15},P_{16},
+P_{20},P_{21},P_{22},P_{23},P_{24}).
+\label{eq:late-products}\]</span> Finally set <span
+class="math display">\[B_O=(B_M,D)\]</span> and define <span
+class="math inline">\(S_0,\ldots,S_7\)</span> by the eight masks in
+table <a href="#tab:output-reconstruction">5</a>, interpreted in <span
+class="math inline">\(B_O\)</span>.</p>
+<div id="lem:availability" class="lemma">
+<p><strong>Lemma 1</strong> (Availability and nonlinear count). <em>The
+construction above is an acyclic circuit in the model of definition <a
+href="#def:circuit-model">1</a>. It contains exactly 29 AND gates, with
+schedule <span class="math inline">\(9+5+15\)</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> The eight <span class="math inline">\(L,R\)</span>
+coordinates are linear in the inputs. By inspection of the nine masks
+listed in equation <a href="#eq:early-products">(6)</a>, their factors
+involve only <span class="math inline">\(L,R\)</span>, so those nine
+products are available first. In the row defining <span
+class="math inline">\(M_k\)</span>, all mask bits belonging to <span
+class="math inline">\(M_k\)</span> and later middle values are zero;
+induction on <span class="math inline">\(k\)</span> therefore proves
+that each of the five middle products is available when it is formed.
+The four <span class="math inline">\(Z\)</span>-coordinates are affine
+in values then available. This makes every factor of the fifteen late
+products available. The outputs are affine combinations of
+already-computed values. No affine step contributes an AND gate. The
+only nonlinear operations are the nine early products, five middle
+products, and fifteen late products, totaling <span
+class="math inline">\(9+5+15=29\)</span>. ◻</p>
+</div>
+<h1 data-number="3" id="sec:correctness"><span
+class="header-section-number">3</span> Correctness and the
+multiplicative-complexity bound</h1>
+<p>The construction has only eight inputs, so functional correctness can
+be certified without sampling or an unproved algebraic identification:
+evaluate all <span class="math inline">\(2^8=256\)</span> inputs.
+appendix <a href="#app:finite">B</a> gives the complete output table
+obtained from the recursion in equations <a
+href="#eq:outer-products">(5)</a> and <a
+href="#eq:middle-products">(8)</a>. Row <span
+class="math inline">\(r\)</span> and column <span
+class="math inline">\(c\)</span> contain the output for input byte <span
+class="math inline">\(\mathtt{rc}\)</span>. It is entrywise identical to
+FIPS 197, Table 4.</p>
+<div id="lem:finite-domain" class="lemma">
+<p><strong>Lemma 2</strong> (Finite-domain equality). <em>Let <span
+class="math inline">\(F,G:\mathbb F_2^8\to\mathbb F_2^8\)</span>. If
+<span class="math inline">\(F(x)=G(x)\)</span> for every one of the 256
+input bytes, then <span class="math inline">\(F=G\)</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> The 256 bytes are exactly all elements of <span
+class="math inline">\(\mathbb F_2^8\)</span>. Pointwise equality on this
+complete domain is the definition of equality of the two
+functions. ◻</p>
+</div>
+<div id="thm:main" class="theorem">
+<p><strong>Theorem 1</strong> (Constructive 29-AND upper bound). <em>For
+the forward AES S-box specified by FIPS 197, in the circuit model of
+definition <a href="#def:circuit-model">1</a>, <span
+class="math display">\[\operatorname{MC}(\operatorname{AES\mbox{-}Sbox})\leq
+29.\]</span></em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> By lemma <a href="#lem:availability">3</a>, <span
+class="math inline">\(C_{29}\)</span> is a legal circuit with exactly 29
+AND gates. Direct recursive evaluation of its displayed formulas gives
+table <a href="#tab:evaluation">7</a>. The same table is the complete
+FIPS 197 forward S-box table. Therefore <span
+class="math inline">\(C_{29}(x)=\operatorname{AES\mbox{-}Sbox}(x)\)</span>
+for every input byte; by lemma <a href="#lem:finite-domain">4</a>, <span
+class="math inline">\(C_{29}=\operatorname{AES\mbox{-}Sbox}\)</span>.
+Since multiplicative complexity is the minimum AND count over all
+circuits computing the function, the existence of this circuit gives
+<span
+class="math inline">\(\operatorname{MC}(\operatorname{AES\mbox{-}Sbox})\leq29\)</span>. ◻</p>
+</div>
+<p>The table is not the only correctness check. The standalone verifier
+reproduced in appendix <a href="#app:artifacts">C</a> first checks the
+literal 256-byte FIPS table against the field inversion and affine map
+in equations <a href="#eq:aes-field">(1)</a> and <a
+href="#eq:fips-affine">(2)</a>; it then parses and exhaustively
+evaluates the released straight-line implementation. A separate staged
+verifier interprets precisely the mask bases and recursions in this
+paper, enforces every availability restriction, and again compares all
+256 values with FIPS. Thus the field definition, printed table, staged
+construction, and compiled straight-line program are pairwise connected
+by explicit finite checks.</p>
+<div id="cor:slp" class="corollary">
+<p><strong>Corollary 1</strong> (Concrete straight-line implementation).
+<em>There is a straight-line implementation of <span
+class="math inline">\(C_{29}\)</span> containing <span
+class="math display">\[29\ \mathrm{AND}+195\ \mathrm{XOR}+4\
+\mathrm{NOT}=228\]</span> instructions. Its ordinary gate depth is 35
+and its AND-depth is 6.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> The strict parser listed in appendix <a
+href="#app:artifacts">C</a> accepts only the declared one-bit grammar,
+verifies that every operand is previously defined, prohibits wire
+redefinition, requires all declared temporaries and outputs, and counts
+the accepted instructions. It obtains the stated tally. Giving inputs
+depth zero and assigning each gate one plus the maximum operand depth
+yields output depth 35. For AND-depth, the same recurrence adds one only
+at an AND gate and obtains 6. Because the verified program order is
+acyclic, these recurrences equal the corresponding longest-path
+definitions. The same parser exhaustively verifies the implementation
+output against FIPS on all 256 inputs. ◻</p>
+</div>
+<h1 data-number="4" id="sec:baseline"><span
+class="header-section-number">4</span> Independent derivation from the
+official NIST circuit</h1>
+<p>The proof of theorem <a href="#thm:main">5</a> is already complete
+and does not assume the correctness of another circuit. This section
+records how the construction was obtained and supplies a second,
+structurally different audit.</p>
+<p>The official NIST 32-AND SLP numbers its nonlinear outputs in program
+order. The first nine are <span
+class="math display">\[t24,t25,t27,t29,t30,t32,t34,t35,t37,\]</span> the
+next five are <span class="math display">\[t48,t50,t54,t58,t61,\]</span>
+and the last eighteen are <span
+class="math inline">\(t68,t69,\ldots,t85\)</span>. Hence its nonlinear
+schedule is <span class="math inline">\(9+5+18\)</span>. The SLP states
+that it is based on the low-multiplicative-complexity AES construction
+of Boyar, Matthews, and Peralta, with an affine-layer improvement <span
+class="citation" data-cites="nistAES32SLP boyarMatthewsPeralta2013"><a
+href="#ref-nistAES32SLP" role="doc-biblioref">[3]</a>, <a
+href="#ref-boyarMatthewsPeralta2013"
+role="doc-biblioref">[5]</a></span>.</p>
+<p>The following coordinate vectors are exact named-wire identities in
+that SLP: <span id="eq:LRZ" class="equation-anchor" aria-hidden="true"></span><span class="math display">\[\begin{aligned}
+L&amp;=(t8,t11,t2,t10),\\
+R&amp;=(t13,t15,t21,t6),\\
+Z&amp;=(t66,t59,t65,t62).
+\end{aligned}
+\label{eq:LRZ}\]</span> The first two are available before any AND gate
+and equal the input-linear forms printed in table <a
+href="#tab:coordinates">2</a>. The vector <span
+class="math inline">\(Z\)</span> is available after the five middle AND
+gates. The new construction retains those five middle functions,
+replaces the 27 outer products by the 24 products of table <a
+href="#tab:products">1</a>, and supplies explicit affine reconstruction
+masks for every retained factor, every <span
+class="math inline">\(Z_i\)</span>, and every output. The exact masks,
+rather than an assertion of span membership, are printed in tables <a
+href="#tab:middle-factors">3</a>–<a
+href="#tab:output-reconstruction">5</a>.</p>
+<p>For an additional symbolic audit, every NIST wire is processed as an
+affine expression over the constant, the eight inputs, and 32
+independent symbols representing the successive NIST AND outputs. XOR,
+XNOR, and NOT update this expression exactly; encountering an AND
+introduces the next independent symbol. This syntactic calculation does
+not assume a truth-table identity between unrelated wires. It proves the
+coordinate identities in equation <a href="#eq:LRZ">(10)</a>, the
+factor-coordinate forms of all 27 outer AND gates, and the exact
+coefficient vectors by which outer AND outputs enter the ten middle
+factors and eight final outputs.</p>
+<p>The remaining part of that symbolic bridge is described in section <a
+href="#sec:formal">6</a>. Its role is provenance and redundancy: the
+direct staged formulas and complete FIPS evaluation remain sufficient
+for the theorem even if the NIST derivation is ignored.</p>
+<h1 data-number="5" id="sec:gf4"><span
+class="header-section-number">5</span> An eight-product identity over
+<span class="math inline">\(\mathbb F_4\)</span></h1>
+<p>The 24 outer products have a compact algebraic organization. Let
+<span class="math display">\[K=\mathbb F_4=\mathbb
+F_2[\omega]/(\omega^2+\omega+1)\]</span> and write <span
+class="math inline">\(x=x_0\omega+x_1\)</span>, <span
+class="math inline">\(y=y_0\omega+y_1\)</span>, and <span
+class="math inline">\(z=z_0\omega+z_1\)</span>. Define <span id="eq:p123" class="equation-anchor" aria-hidden="true"></span><span id="eq:p45678" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[\begin{aligned}
+p_1&amp;=x_0y_0, &amp;
+p_2&amp;=x_1y_1, &amp;
+p_3&amp;=(x_0\oplus x_1)(y_0\oplus y_1),
+\label{eq:p123}\\
+p_4&amp;=(x_0\oplus y_0\oplus y_1\oplus z_1)(x_1\oplus y_0\oplus
+z_0),\nonumber\\
+p_5&amp;=(x_1\oplus y_0\oplus y_1\oplus z_1)(x_0\oplus x_1\oplus
+y_0\oplus z_0),\nonumber\\
+p_6&amp;=(x_1\oplus y_0\oplus y_1\oplus z_0\oplus z_1)(x_0\oplus
+y_1\oplus z_0),\nonumber\\
+p_7&amp;=(x_1\oplus y_0\oplus z_1)(x_0\oplus x_1\oplus y_1\oplus
+z_0),\nonumber\\
+p_8&amp;=(x_1\oplus y_0\oplus z_0\oplus z_1)(x_0\oplus y_0\oplus
+y_1\oplus z_0).
+\label{eq:p45678}
+\end{aligned}\]</span> Then define six affine reconstructions by <span id="eq:xy" class="equation-anchor" aria-hidden="true"></span><span id="eq:yz" class="equation-anchor" aria-hidden="true"></span><span id="eq:zx" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[\begin{aligned}
+(xy)_0&amp;=p_2\oplus p_3, &amp;
+(xy)_1&amp;=p_1\oplus p_2,
+\label{eq:xy}\\
+(yz)_0&amp;=y_0\oplus y_1\oplus p_1\oplus p_2\oplus p_3\oplus p_6\oplus
+p_8,\nonumber\\
+(yz)_1&amp;=y_1\oplus p_5\oplus p_6\oplus p_7\oplus p_8,
+\label{eq:yz}\\
+(zx)_0&amp;=x_1\oplus p_1\oplus p_2\oplus p_3\oplus p_4\oplus
+p_5,\nonumber\\
+(zx)_1&amp;=x_1\oplus y_1\oplus z_0\oplus p_1\oplus p_2\oplus p_3\oplus
+p_6\oplus p_7.
+\label{eq:zx}
+\end{aligned}\]</span> Here <span
+class="math inline">\((ab)_0\omega+(ab)_1\)</span> denotes the displayed
+pair of reconstructed bits.</p>
+<div id="prop:gf4" class="proposition">
+<p><strong>Proposition 1</strong> (Filtered <span
+class="math inline">\(\mathbb F_4\)</span> triangle identity). <em>For
+every <span class="math inline">\((x,y,z)\in K^3\)</span>, the
+quantities in equations <a href="#eq:xy">(13)</a>–<a
+href="#eq:zx">(15)</a> are exactly the coordinates of <span
+class="math inline">\(xy,yz,zx\)</span>. Products <span
+class="math inline">\(p_1,p_2,p_3\)</span> use only <span
+class="math inline">\(x,y\)</span>, while <span
+class="math inline">\(p_4,\ldots,p_8\)</span> may use <span
+class="math inline">\(z\)</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Since <span
+class="math inline">\(\omega^2=\omega+1\)</span>, <span id="eq:gf4mul" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[(a_0\omega+a_1)(b_0\omega+b_1)
+=(a_0b_0\oplus a_0b_1\oplus a_1b_0)\omega
+  \oplus(a_0b_0\oplus a_1b_1).
+\label{eq:gf4mul}\]</span> Expand the right sides of equations <a
+href="#eq:xy">(13)</a>–<a href="#eq:zx">(15)</a>, substitute
+equations <a href="#eq:p123">(11)</a> and <a href="#eq:p45678">(12)</a>,
+and cancel repeated monomials over <span class="math inline">\(\mathbb
+F_2\)</span>. The six resulting algebraic normal forms are <span
+class="math display">\[\begin{aligned}
+(xy)_0&amp;=x_0y_0\oplus x_0y_1\oplus x_1y_0,
+&amp; (xy)_1&amp;=x_0y_0\oplus x_1y_1,\\
+(yz)_0&amp;=y_0z_0\oplus y_0z_1\oplus y_1z_0,
+&amp; (yz)_1&amp;=y_0z_0\oplus y_1z_1,\\
+(zx)_0&amp;=z_0x_0\oplus z_0x_1\oplus z_1x_0,
+&amp; (zx)_1&amp;=z_0x_0\oplus z_1x_1.
+\end{aligned}\]</span> These are precisely the two coordinates in
+equation <a href="#eq:gf4mul">(16)</a>. The availability statement
+follows directly from the eight factor formulas. ◻</p>
+</div>
+<p>To obtain the 24 rows in table <a href="#tab:products">1</a>, first
+apply the invertible binary transform <span id="eq:Phi" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[\Phi(a_0,a_1,a_2,a_3)=
+\bigl((a_2\oplus a_3)\omega+a_3,\ a_1\omega+a_0\bigr).
+\label{eq:Phi}\]</span> Its four binary row masks are <span
+class="math inline">\(\mathtt c,\mathtt8,\mathtt2,\mathtt1\)</span>; the
+compact tag <span class="math inline">\(\mathtt{128c}\)</span> records
+them from high to low hexadecimal digit. Invertibility is immediate from
+<span class="math display">\[a_3=q_1,\qquad a_2=q_0\oplus q_1,\qquad
+a_1=q_2,\qquad a_0=q_3,\]</span> where <span
+class="math inline">\((q_0,q_1,q_2,q_3)=(a_2\oplus
+a_3,a_3,a_1,a_0)\)</span>.</p>
+<p>Apply proposition <a href="#prop:gf4">7</a> three times: to the first
+components of <span
+class="math inline">\(\Phi(L),\Phi(R),\Phi(Z)\)</span>, to their second
+components, and to the componentwise sums of those two triples. This
+produces three blocks of eight products. In each block, three products
+are early and five are late, so the total filtration is nine early and
+fifteen late. This observation explains the factor pattern in table <a
+href="#tab:products">1</a>. It is not an assumption that a particular
+field structure on four-bit vectors matches the NIST circuit: the exact
+relation to the required NIST functions is checked by the explicit
+reconstruction masks and the formal bridge below.</p>
+<h1 data-number="6" id="sec:formal"><span
+class="header-section-number">6</span> Formal quadratic bridge</h1>
+<p>The following calculation independently checks why the 24 factor
+pairs can replace the outer portion of the 32-AND NIST construction.</p>
+<p>Let <span class="math inline">\(V=\mathbb F_2^{12}\)</span> with
+ordered coordinates <span class="math inline">\(B_C\)</span> from
+equation <a href="#eq:coordinate-basis">(4)</a>. For <span
+class="math inline">\(u\in V\)</span>, let <span
+class="math inline">\(\ell_u=\left\langle u\right\rangle_{B_C}\)</span>,
+now treating the twelve coordinates as independent Boolean
+indeterminates.</p>
+<div id="lem:wedge" class="lemma">
+<p><strong>Lemma 3</strong> (Product signature and diagonal correction).
+<em>In the Boolean polynomial ring with <span
+class="math inline">\(X_i^2=X_i\)</span>, <span id="eq:wedge" class="equation-anchor" aria-hidden="true"></span><span
+class="math display">\[\ell_u(X)\ell_v(X)=
+\bigoplus_{i&lt;j}(u_iv_j\oplus u_jv_i)X_iX_j
+\oplus\bigoplus_i u_iv_iX_i.
+\label{eq:wedge}\]</span> Thus the off-diagonal quadratic signature is
+the decomposable two-form <span class="math inline">\(u\wedge
+v\in\Lambda^2V\)</span>, while the diagonal linear correction has mask
+<span class="math inline">\(u\mathbin{\&amp;}v\)</span>.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> Expand the product. For <span
+class="math inline">\(i&lt;j\)</span>, the coefficient of <span
+class="math inline">\(X_iX_j\)</span> is the XOR of the two ordered
+contributions <span class="math inline">\(u_iv_j\)</span> and <span
+class="math inline">\(u_jv_i\)</span>. The diagonal contribution is
+<span class="math inline">\(u_iv_iX_i^2=u_iv_iX_i\)</span>. Grouping the
+terms gives equation <a href="#eq:wedge">(18)</a>. ◻</p>
+</div>
+<p>Encode <span class="math inline">\(u\wedge v\)</span> in the
+lexicographically ordered pair basis <span
+class="math display">\[(0,1),(0,2),\ldots,(0,11),(1,2),\ldots,(10,11).\]</span>
+A symbolic pass through the NIST SLP gives 27 linearly independent
+signatures for its nine early and 18 late outer AND outputs. Projecting
+the ten middle-factor expressions and eight output expressions onto
+those 27 outer symbols, and then mapping through the corresponding
+signatures, gives an ordered four-dimensional pre-middle space <span
+class="math inline">\(Q_{\mathrm{pre}}\)</span> and an ordered
+twelve-dimensional total space <span class="math inline">\(Q\)</span>,
+with <span class="math display">\[Q_{\mathrm{pre}}\subset
+Q\subset\Lambda^2V,
+\qquad \dim Q_{\mathrm{pre}}=4,
+\qquad \dim Q=12.\]</span> The twelve target signatures and the 24-bit
+product-selection masks are printed in table <a
+href="#tab:targets">6</a>; the first four selection masks use only the
+nine early products.</p>
+<div id="prop:formal-certificate" class="proposition">
+<p><strong>Proposition 2</strong> (Exact formal reconstruction). <em>For
+every row of table <a href="#tab:targets">6</a>, the selected products
+from table <a href="#tab:products">1</a>, together with the diagonal
+correction prescribed by lemma <a href="#lem:wedge">8</a>, equal the
+indicated quadratic polynomial on all <span
+class="math inline">\(2^{12}=4096\)</span> assignments of the formal
+coordinates. The first four identities use no late product.</em></p>
+</div>
+<div class="proof">
+<p><em>Proof.</em> For a selection set <span
+class="math inline">\(J\)</span>, compute <span
+class="math display">\[d=\bigoplus_{j\in J}(u_j\wedge v_j),
+\qquad
+r=\bigoplus_{j\in J}(u_j\mathbin{\&amp;}v_j).\]</span> The stored
+selection mask is checked to give exactly the target signature <span
+class="math inline">\(d\)</span>. Applying lemma <a
+href="#lem:wedge">8</a> term by term then gives the polynomial identity
+<span class="math display">\[q(X)=\bigoplus_{j\in
+J}\ell_{u_j}(X)\ell_{v_j}(X)\oplus\ell_r(X).\]</span> This coefficient
+argument proves the identity. As a redundant check of coordinate and bit
+ordering, both sides are also evaluated on all 4096 assignments.
+Inspection of the first four selection masks shows that their set bits
+occur only at the nine early product positions. ◻</p>
+</div>
+<p>The formal calculation concerns the quadratic outer contribution. The
+full affine corrections, constant terms, recursive middle dependencies,
+post-middle coordinates, and output expressions are not left implicit:
+they are the explicit staged masks in tables <a
+href="#tab:middle-factors">3</a>–<a
+href="#tab:output-reconstruction">5</a>. Their exhaustive eight-input
+evaluation is the direct correctness proof used in theorem <a
+href="#thm:main">5</a>.</p>
+<h1 data-number="7" id="sec:verification"><span
+class="header-section-number">7</span> Verification separation</h1>
+<p>The result is checked through independent representations so that a
+defect in one representation is unlikely to be silently inherited by all
+others.</p>
+<ol>
+<li><p>The staged-certificate checker parses the 24 factor pairs and all
+affine masks, enforces the nine-before-five-before-fifteen availability
+filtration, and evaluates all 256 inputs against a literal FIPS
+table.</p></li>
+<li><p>The direct straight-line checker strictly parses declarations,
+delimiters, gate arities, dependencies, and wire names; it recomputes
+the exact tally and both depths, independently derives the FIPS S-box by
+finite-field arithmetic, checks that derivation against the literal
+table, and evaluates the circuit on all inputs.</p></li>
+<li><p>A bit-parallel evaluator represents every wire by its complete
+256-bit truth table. A separate C99 parser and evaluator repeats the
+finite circuit test.</p></li>
+<li><p>Both straight-line implementations are normalized by absorbing
+every affine operation into masks over the constant, inputs, and
+preceding AND outputs. Their 29 ordered factor pairs and eight output
+masks agree exactly with the printed XOR–AND graph certificate.</p></li>
+<li><p>The NIST bridge derives its target from the official 32-AND SLP
+rather than accepting a target from the 24-product witness; it verifies
+the formal identities on all 4096 coordinate assignments and the actual
+staged realization on all 256 AES inputs.</p></li>
+<li><p>A clean-tree rebuild regenerates the readable circuit,
+resynthesizes only its affine network, regenerates the normalized graph,
+and compares all generated artifacts byte for byte.</p></li>
+</ol>
+<p>These checks have deliberately different proof obligations. The first
+two alone each give a complete finite correctness check for the upper
+bound. The remaining checks establish provenance, representation
+consistency, and deterministic reproducibility. None of them is used to
+assert a 29-gate lower bound.</p>
+<h1 data-number="8" id="sec:conclusion"><span
+class="header-section-number">8</span> Conclusion</h1>
+<p>The explicit staged construction in this paper is a legal one-bit
+Boolean circuit with nonlinear schedule <span
+class="math inline">\(9+5+15=29\)</span>. Its complete 256-entry output
+table is the FIPS 197 forward AES S-box table. Therefore <span
+class="math inline">\(\operatorname{MC}(\operatorname{AES\mbox{-}Sbox})\leq29\)</span>.
+A concrete implementation uses 228 one-bit instructions and has
+AND-depth 6. The derivation from the official NIST 32-AND construction,
+the three-block <span class="math inline">\(\mathbb F_4\)</span>
+identity, the formal quadratic bridge, and multiple independent
+evaluators provide additional checks, but the theorem ultimately rests
+on the explicit formulas and complete finite evaluation. The
+construction establishes an upper bound and does not establish
+optimality.</p>
+<h1 data-number="A" id="app:decomposition"><span
+class="header-section-number">A</span> Complete staged
+decomposition</h1>
+<p>All masks in this appendix use definition <a href="#def:masks">2</a>.
+The product table supplies every factor of all 24 outer AND gates. The
+staged tables then supply every input coordinate, every factor of the
+five middle AND gates, every post-middle coordinate, and every output
+expression. Together these tables are a complete specification of <span
+class="math inline">\(C_{29}\)</span>.</p>
+<div id="tab:products">
+<div class="table-wrap"><table>
+<caption>Complete 24-product certificate. A factor mask uses coordinate
+order <span
+class="math inline">\((L_0,\ldots,L_3,R_0,\ldots,R_3,Z_0,\ldots,Z_3)\)</span>.
+Multiplication is commutative, so the displayed factor order has no
+mathematical significance.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">product</th>
+<th style="text-align: center;">stage</th>
+<th style="text-align: center;">block</th>
+<th style="text-align: left;">first factor</th>
+<th style="text-align: left;">second factor</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{01}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{0c0}}=R_2\mathbin{\oplus}\allowbreak
+R_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{00c}}=L_2\mathbin{\oplus}\allowbreak
+L_3\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{02}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{080}}=R_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{008}}=L_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{03}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{040}}=R_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{004}}=L_2\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{04}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{84c}}=L_2\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_2\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{cc8}}=L_3\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{05}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{848}}=L_3\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{cc4}}=L_2\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{06}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{448}}=L_3\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak Z_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{c8c}}=L_2\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{07}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{8c8}}=L_3\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{c84}}=L_2\mathbin{\oplus}\allowbreak
+R_3\mathbin{\oplus}\allowbreak Z_2\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{08}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{4c8}}=L_3\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{c4c}}=L_2\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_2\mathbin{\oplus}\allowbreak
+Z_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{09}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{020}}=R_1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{002}}=L_1\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{10}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{010}}=R_0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{001}}=L_0\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{11}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{030}}=R_0\mathbin{\oplus}\allowbreak
+R_1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{003}}=L_0\mathbin{\oplus}\allowbreak
+L_1\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{12}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{132}}=L_1\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+Z_0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{221}}=L_0\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak Z_1\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{13}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{131}}=L_0\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+Z_0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{223}}=L_0\mathbin{\oplus}\allowbreak
+L_1\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+Z_1\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{14}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{331}}=L_0\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+Z_0\mathbin{\oplus}\allowbreak Z_1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{212}}=L_1\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak Z_1\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{15}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{121}}=L_0\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak Z_0\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{213}}=L_0\mathbin{\oplus}\allowbreak
+L_1\mathbin{\oplus}\allowbreak R_0\mathbin{\oplus}\allowbreak
+Z_1\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{16}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{321}}=L_0\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak Z_0\mathbin{\oplus}\allowbreak
+Z_1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{232}}=L_1\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+Z_1\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{17}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{0e0}}=R_1\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{00e}}=L_1\mathbin{\oplus}\allowbreak
+L_2\mathbin{\oplus}\allowbreak L_3\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{18}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{090}}=R_0\mathbin{\oplus}\allowbreak
+R_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{009}}=L_0\mathbin{\oplus}\allowbreak
+L_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{19}\)</span></td>
+<td style="text-align: center;">early</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{070}}=R_0\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak R_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{007}}=L_0\mathbin{\oplus}\allowbreak
+L_1\mathbin{\oplus}\allowbreak L_2\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{20}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{97e}}=L_1\mathbin{\oplus}\allowbreak
+L_2\mathbin{\oplus}\allowbreak L_3\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak Z_0\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{ee9}}=L_0\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_1\mathbin{\oplus}\allowbreak Z_2\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{21}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{979}}=L_0\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_0\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak R_2\mathbin{\oplus}\allowbreak
+Z_0\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{ee7}}=L_0\mathbin{\oplus}\allowbreak
+L_1\mathbin{\oplus}\allowbreak L_2\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak R_2\mathbin{\oplus}\allowbreak
+R_3\mathbin{\oplus}\allowbreak Z_1\mathbin{\oplus}\allowbreak
+Z_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{22}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{779}}=L_0\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_0\mathbin{\oplus}\allowbreak
+R_1\mathbin{\oplus}\allowbreak R_2\mathbin{\oplus}\allowbreak
+Z_0\mathbin{\oplus}\allowbreak Z_1\mathbin{\oplus}\allowbreak
+Z_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{e9e}}=L_1\mathbin{\oplus}\allowbreak
+L_2\mathbin{\oplus}\allowbreak L_3\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_1\mathbin{\oplus}\allowbreak Z_2\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(P_{23}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{9e9}}=L_0\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_0\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{e97}}=L_0\mathbin{\oplus}\allowbreak
+L_1\mathbin{\oplus}\allowbreak L_2\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_1\mathbin{\oplus}\allowbreak Z_2\mathbin{\oplus}\allowbreak
+Z_3\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(P_{24}\)</span></td>
+<td style="text-align: center;">late</td>
+<td style="text-align: center;"><span
+class="math inline">\(0\mathbin{\oplus}1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{7e9}}=L_0\mathbin{\oplus}\allowbreak
+L_3\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak R_3\mathbin{\oplus}\allowbreak
+Z_0\mathbin{\oplus}\allowbreak Z_1\mathbin{\oplus}\allowbreak
+Z_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{e7e}}=L_1\mathbin{\oplus}\allowbreak
+L_2\mathbin{\oplus}\allowbreak L_3\mathbin{\oplus}\allowbreak
+R_0\mathbin{\oplus}\allowbreak R_1\mathbin{\oplus}\allowbreak
+R_2\mathbin{\oplus}\allowbreak Z_1\mathbin{\oplus}\allowbreak
+Z_2\mathbin{\oplus}\allowbreak Z_3\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 data-number="9.1" id="input-linear-coordinates"><span
+class="header-section-number">9.1</span> Input-linear coordinates</h2>
+<p>The input bits are ordered <span
+class="math inline">\((U_0,\ldots,U_7)\)</span>, with <span
+class="math inline">\(U_0\)</span> the most significant bit.</p>
+<div id="tab:coordinates">
+<div class="table-wrap"><table>
+<caption>The eight pre-middle coordinates as linear forms in <span
+class="math inline">\((U_0,\ldots,U_7)\)</span>.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">coordinate</th>
+<th style="text-align: center;">mask</th>
+<th style="text-align: left;">linear form</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(L_0\)</span></td>
+<td style="text-align: center;"><code>69</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_3\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(L_1\)</span></td>
+<td style="text-align: center;"><code>e7</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+U_7\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(L_2\)</span></td>
+<td style="text-align: center;"><code>41</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak U_6\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(L_3\)</span></td>
+<td style="text-align: center;"><code>c6</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_1\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+U_7\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(R_0\)</span></td>
+<td style="text-align: center;"><code>59</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_6\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(R_1\)</span></td>
+<td style="text-align: center;"><code>d9</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak U_7\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(R_2\)</span></td>
+<td style="text-align: center;"><code>74</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_2\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(R_3\)</span></td>
+<td style="text-align: center;"><code>86</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_1\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_7\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 data-number="9.2" id="five-retained-middle-products"><span
+class="header-section-number">9.2</span> Five retained middle
+products</h2>
+<p>For this table the mask basis is <span
+class="math display">\[(1,U_0,\ldots,U_7,P_{01},P_{02},P_{03},P_{09},P_{10},P_{11},P_{17},P_{18},P_{19},M_1,\ldots,M_5).\]</span>
+A row defining <span class="math inline">\(M_k\)</span> has zero
+coefficients on <span class="math inline">\(M_k,\ldots,M_5\)</span>;
+hence both factors are available before <span
+class="math inline">\(M_k\)</span> is formed.</p>
+<div id="tab:middle-factors">
+<div class="table-wrap"><table>
+<caption>Exact affine factors of the five middle AND gates.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">gate</th>
+<th style="text-align: left;">first factor</th>
+<th style="text-align: left;">second factor</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(M_1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{1ecf6}}=U_0\mathbin{\oplus}\allowbreak
+U_1\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak
+P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{18}\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{1d06a}}=U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{18}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(M_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{2b60a}}=U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak
+P_{02}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak
+P_{10}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{19}\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{730ea}}=U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak
+M_1\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(M_3\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{75afc}}=U_1\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak
+P_{03}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_1\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{2e080}}=U_6\mathbin{\oplus}\allowbreak
+P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak
+P_{17}\mathbin{\oplus}\allowbreak P_{19}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(M_4\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{330ea}}=U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{18}\mathbin{\oplus}\allowbreak P_{19}\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{140000}}=M_1\mathbin{\oplus}\allowbreak
+M_3\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(M_5\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{b5afc}}=U_1\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak
+P_{03}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_2\)</span></td>
+<td style="text-align: left;"><span
+class="math inline">\(\ell_{\mathtt{2730ea}}=U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak
+M_1\mathbin{\oplus}\allowbreak M_4\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 data-number="9.3" id="post-middle-coordinates"><span
+class="header-section-number">9.3</span> Post-middle coordinates</h2>
+<div id="tab:post-coordinates">
+<div class="table-wrap"><table>
+<caption>The four post-middle coordinates in the same 23-element affine
+basis.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">coordinate</th>
+<th style="text-align: center;">mask</th>
+<th style="text-align: left;">affine expression</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(Z_0\)</span></td>
+<td style="text-align: center;"><code>21d06a</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{18}\mathbin{\oplus}\allowbreak M_4\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(Z_1\)</span></td>
+<td style="text-align: center;"><code>32e080</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_6\mathbin{\oplus}\allowbreak
+P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak
+P_{17}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak
+M_3\mathbin{\oplus}\allowbreak M_4\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(Z_2\)</span></td>
+<td style="text-align: center;"><code>49ecf6</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_1\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak
+P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{18}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak
+M_5\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(Z_3\)</span></td>
+<td style="text-align: center;"><code>42b60a</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak
+P_{02}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak
+P_{10}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_5\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 data-number="9.4" id="output-reconstruction"><span
+class="header-section-number">9.4</span> Output reconstruction</h2>
+<p>For the output rows, append the late products in the order <span
+class="math display">\[(P_{04},P_{05},P_{06},P_{07},P_{08},P_{12},P_{13},P_{14},P_{15},P_{16},P_{20},P_{21},P_{22},P_{23},P_{24})\]</span>
+to the 23-element middle basis.</p>
+<div id="tab:output-reconstruction">
+<div class="table-wrap"><table>
+<caption>Exact affine reconstruction of the eight output bits.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">output</th>
+<th style="text-align: center;">mask</th>
+<th style="text-align: left;">affine expression</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(S_0\)</span></td>
+<td style="text-align: center;"><code>2491ba35ce</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+U_7\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak
+P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak
+M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak
+P_{04}\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak
+P_{12}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak
+P_{21}\mathbin{\oplus}\allowbreak P_{24}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(S_1\)</span></td>
+<td style="text-align: center;"><code>257bba3b95</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(1\mathbin{\oplus}\allowbreak
+U_1\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak
+P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak
+P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak
+M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak
+P_{04}\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak
+P_{06}\mathbin{\oplus}\allowbreak P_{08}\mathbin{\oplus}\allowbreak
+P_{12}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak
+P_{14}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak
+P_{21}\mathbin{\oplus}\allowbreak P_{24}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(S_2\)</span></td>
+<td style="text-align: center;"><code>2e6532ee01</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(1\mathbin{\oplus}\allowbreak
+P_{01}\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak
+P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak
+M_4\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak
+P_{07}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak
+P_{14}\mathbin{\oplus}\allowbreak P_{20}\mathbin{\oplus}\allowbreak
+P_{21}\mathbin{\oplus}\allowbreak P_{22}\mathbin{\oplus}\allowbreak
+P_{24}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(S_3\)</span></td>
+<td style="text-align: center;"><code>19dbba4b98</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_2\mathbin{\oplus}\allowbreak
+U_3\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak
+U_7\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak
+P_{03}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak
+M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak
+P_{04}\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak
+P_{06}\mathbin{\oplus}\allowbreak P_{08}\mathbin{\oplus}\allowbreak
+P_{12}\mathbin{\oplus}\allowbreak P_{14}\mathbin{\oplus}\allowbreak
+P_{15}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak
+P_{22}\mathbin{\oplus}\allowbreak P_{23}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(S_4\)</span></td>
+<td style="text-align: center;"><code>189eba357c</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_1\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_7\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak
+P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak
+M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak
+P_{04}\mathbin{\oplus}\allowbreak P_{06}\mathbin{\oplus}\allowbreak
+P_{07}\mathbin{\oplus}\allowbreak P_{08}\mathbin{\oplus}\allowbreak
+P_{12}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak
+P_{22}\mathbin{\oplus}\allowbreak P_{23}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(S_5\)</span></td>
+<td style="text-align: center;"><code>0c0332e152</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(U_0\mathbin{\oplus}\allowbreak
+U_3\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_7\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak
+P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak
+M_4\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak
+P_{06}\mathbin{\oplus}\allowbreak P_{21}\mathbin{\oplus}\allowbreak
+P_{22}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;"><span
+class="math inline">\(S_6\)</span></td>
+<td style="text-align: center;"><code>0db00b2bf9</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(1\mathbin{\oplus}\allowbreak
+U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak
+U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak
+U_6\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak
+P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak
+P_{10}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak
+P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak
+P_{12}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak
+P_{15}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak
+P_{21}\mathbin{\oplus}\allowbreak P_{22}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;"><span
+class="math inline">\(S_7\)</span></td>
+<td style="text-align: center;"><code>19b508a44b</code></td>
+<td style="text-align: left;"><span
+class="math inline">\(1\mathbin{\oplus}\allowbreak
+U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak
+U_5\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak
+P_{10}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak
+M_2\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak
+P_{07}\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak
+P_{13}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak
+P_{16}\mathbin{\oplus}\allowbreak P_{22}\mathbin{\oplus}\allowbreak
+P_{23}\)</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 data-number="9.5" id="formal-target-and-reconstruction-masks"><span
+class="header-section-number">9.5</span> Formal target and
+reconstruction masks</h2>
+<div id="tab:targets">
+<div class="table-wrap"><table>
+<caption>Formal quadratic reconstruction certificate derived from the
+NIST SLP. The first four rows form the pre-middle subspace.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">row</th>
+<th style="text-align: left;">first independent requirement</th>
+<th style="text-align: left;">target signature</th>
+<th style="text-align: left;">selected products</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: right;">(<span
+class="math inline">\(Q_{\mathrm{pre}}\)</span>)</td>
+<td style="text-align: left;">first factor of <span
+class="math inline">\(M_1\)</span></td>
+<td style="text-align: left;"><code>000000003c281a058</code></td>
+<td style="text-align: left;"><code>030606</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">02 (<span
+class="math inline">\(Q_{\mathrm{pre}}\)</span>)</td>
+<td style="text-align: left;">second factor of <span
+class="math inline">\(M_1\)</span></td>
+<td style="text-align: left;"><code>000000001c381e050</code></td>
+<td style="text-align: left;"><code>030500</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">03 (<span
+class="math inline">\(Q_{\mathrm{pre}}\)</span>)</td>
+<td style="text-align: left;">first factor of <span
+class="math inline">\(M_2\)</span></td>
+<td style="text-align: left;"><code>00000000281416030</code></td>
+<td style="text-align: left;"><code>050303</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">04 (<span
+class="math inline">\(Q_{\mathrm{pre}}\)</span>)</td>
+<td style="text-align: left;">second factor of <span
+class="math inline">\(M_2\)</span></td>
+<td style="text-align: left;"><code>00000000241c0a078</code></td>
+<td style="text-align: left;"><code>060300</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">05 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_0\)</span></td>
+<td style="text-align: left;"><code>007e7943c281a0580</code></td>
+<td style="text-align: left;"><code>97481f</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">06 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_1\)</span></td>
+<td style="text-align: left;"><code>00fa6963c281a0580</code></td>
+<td style="text-align: left;"><code>97b8b8</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">07 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_2\)</span></td>
+<td style="text-align: left;"><code>005f31a241c0a0780</code></td>
+<td style="text-align: left;"><code>b83057</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">08 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_3\)</span></td>
+<td style="text-align: left;"><code>00841023c281a0580</code></td>
+<td style="text-align: left;"><code>67efb8</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">09 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_4\)</span></td>
+<td style="text-align: left;"><code>004c0863c281a0580</code></td>
+<td style="text-align: left;"><code>6748ef</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_5\)</span></td>
+<td style="text-align: left;"><code>002148e0c081c0480</code></td>
+<td style="text-align: left;"><code>300030</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">11 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_6\)</span></td>
+<td style="text-align: left;"><code>00e950a1c381e0500</code></td>
+<td style="text-align: left;"><code>30df00</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">12 (<span
+class="math inline">\(Q\)</span>)</td>
+<td style="text-align: left;">output <span
+class="math inline">\(S_7\)</span></td>
+<td style="text-align: left;"><code>00c81841c381e0500</code></td>
+<td style="text-align: left;"><code>67df57</code></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h1 data-number="B" id="app:finite"><span
+class="header-section-number">B</span> Complete finite evaluation and
+normalized graph</h1>
+<div id="tab:evaluation">
+<div class="table-wrap"><table>
+<caption>Complete evaluation of the staged 29-AND certificate. Row and
+column headers are hexadecimal input nibbles; each body entry is the
+hexadecimal output byte. This table is entrywise identical to FIPS 197,
+Table 4.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: center;"></th>
+<th style="text-align: center;"><code>0</code></th>
+<th style="text-align: center;"><code>1</code></th>
+<th style="text-align: center;"><code>2</code></th>
+<th style="text-align: center;"><code>3</code></th>
+<th style="text-align: center;"><code>4</code></th>
+<th style="text-align: center;"><code>5</code></th>
+<th style="text-align: center;"><code>6</code></th>
+<th style="text-align: center;"><code>7</code></th>
+<th style="text-align: center;"><code>8</code></th>
+<th style="text-align: center;"><code>9</code></th>
+<th style="text-align: center;"><code>a</code></th>
+<th style="text-align: center;"><code>b</code></th>
+<th style="text-align: center;"><code>c</code></th>
+<th style="text-align: center;"><code>d</code></th>
+<th style="text-align: center;"><code>e</code></th>
+<th style="text-align: center;"><code>f</code></th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: center;"><code>0</code></td>
+<td style="text-align: center;"><code>63</code></td>
+<td style="text-align: center;"><code>7c</code></td>
+<td style="text-align: center;"><code>77</code></td>
+<td style="text-align: center;"><code>7b</code></td>
+<td style="text-align: center;"><code>f2</code></td>
+<td style="text-align: center;"><code>6b</code></td>
+<td style="text-align: center;"><code>6f</code></td>
+<td style="text-align: center;"><code>c5</code></td>
+<td style="text-align: center;"><code>30</code></td>
+<td style="text-align: center;"><code>01</code></td>
+<td style="text-align: center;"><code>67</code></td>
+<td style="text-align: center;"><code>2b</code></td>
+<td style="text-align: center;"><code>fe</code></td>
+<td style="text-align: center;"><code>d7</code></td>
+<td style="text-align: center;"><code>ab</code></td>
+<td style="text-align: center;"><code>76</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: center;"><code>ca</code></td>
+<td style="text-align: center;"><code>82</code></td>
+<td style="text-align: center;"><code>c9</code></td>
+<td style="text-align: center;"><code>7d</code></td>
+<td style="text-align: center;"><code>fa</code></td>
+<td style="text-align: center;"><code>59</code></td>
+<td style="text-align: center;"><code>47</code></td>
+<td style="text-align: center;"><code>f0</code></td>
+<td style="text-align: center;"><code>ad</code></td>
+<td style="text-align: center;"><code>d4</code></td>
+<td style="text-align: center;"><code>a2</code></td>
+<td style="text-align: center;"><code>af</code></td>
+<td style="text-align: center;"><code>9c</code></td>
+<td style="text-align: center;"><code>a4</code></td>
+<td style="text-align: center;"><code>72</code></td>
+<td style="text-align: center;"><code>c0</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: center;"><code>b7</code></td>
+<td style="text-align: center;"><code>fd</code></td>
+<td style="text-align: center;"><code>93</code></td>
+<td style="text-align: center;"><code>26</code></td>
+<td style="text-align: center;"><code>36</code></td>
+<td style="text-align: center;"><code>3f</code></td>
+<td style="text-align: center;"><code>f7</code></td>
+<td style="text-align: center;"><code>cc</code></td>
+<td style="text-align: center;"><code>34</code></td>
+<td style="text-align: center;"><code>a5</code></td>
+<td style="text-align: center;"><code>e5</code></td>
+<td style="text-align: center;"><code>f1</code></td>
+<td style="text-align: center;"><code>71</code></td>
+<td style="text-align: center;"><code>d8</code></td>
+<td style="text-align: center;"><code>31</code></td>
+<td style="text-align: center;"><code>15</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: center;"><code>04</code></td>
+<td style="text-align: center;"><code>c7</code></td>
+<td style="text-align: center;"><code>23</code></td>
+<td style="text-align: center;"><code>c3</code></td>
+<td style="text-align: center;"><code>18</code></td>
+<td style="text-align: center;"><code>96</code></td>
+<td style="text-align: center;"><code>05</code></td>
+<td style="text-align: center;"><code>9a</code></td>
+<td style="text-align: center;"><code>07</code></td>
+<td style="text-align: center;"><code>12</code></td>
+<td style="text-align: center;"><code>80</code></td>
+<td style="text-align: center;"><code>e2</code></td>
+<td style="text-align: center;"><code>eb</code></td>
+<td style="text-align: center;"><code>27</code></td>
+<td style="text-align: center;"><code>b2</code></td>
+<td style="text-align: center;"><code>75</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>4</code></td>
+<td style="text-align: center;"><code>09</code></td>
+<td style="text-align: center;"><code>83</code></td>
+<td style="text-align: center;"><code>2c</code></td>
+<td style="text-align: center;"><code>1a</code></td>
+<td style="text-align: center;"><code>1b</code></td>
+<td style="text-align: center;"><code>6e</code></td>
+<td style="text-align: center;"><code>5a</code></td>
+<td style="text-align: center;"><code>a0</code></td>
+<td style="text-align: center;"><code>52</code></td>
+<td style="text-align: center;"><code>3b</code></td>
+<td style="text-align: center;"><code>d6</code></td>
+<td style="text-align: center;"><code>b3</code></td>
+<td style="text-align: center;"><code>29</code></td>
+<td style="text-align: center;"><code>e3</code></td>
+<td style="text-align: center;"><code>2f</code></td>
+<td style="text-align: center;"><code>84</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>5</code></td>
+<td style="text-align: center;"><code>53</code></td>
+<td style="text-align: center;"><code>d1</code></td>
+<td style="text-align: center;"><code>00</code></td>
+<td style="text-align: center;"><code>ed</code></td>
+<td style="text-align: center;"><code>20</code></td>
+<td style="text-align: center;"><code>fc</code></td>
+<td style="text-align: center;"><code>b1</code></td>
+<td style="text-align: center;"><code>5b</code></td>
+<td style="text-align: center;"><code>6a</code></td>
+<td style="text-align: center;"><code>cb</code></td>
+<td style="text-align: center;"><code>be</code></td>
+<td style="text-align: center;"><code>39</code></td>
+<td style="text-align: center;"><code>4a</code></td>
+<td style="text-align: center;"><code>4c</code></td>
+<td style="text-align: center;"><code>58</code></td>
+<td style="text-align: center;"><code>cf</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>6</code></td>
+<td style="text-align: center;"><code>d0</code></td>
+<td style="text-align: center;"><code>ef</code></td>
+<td style="text-align: center;"><code>aa</code></td>
+<td style="text-align: center;"><code>fb</code></td>
+<td style="text-align: center;"><code>43</code></td>
+<td style="text-align: center;"><code>4d</code></td>
+<td style="text-align: center;"><code>33</code></td>
+<td style="text-align: center;"><code>85</code></td>
+<td style="text-align: center;"><code>45</code></td>
+<td style="text-align: center;"><code>f9</code></td>
+<td style="text-align: center;"><code>02</code></td>
+<td style="text-align: center;"><code>7f</code></td>
+<td style="text-align: center;"><code>50</code></td>
+<td style="text-align: center;"><code>3c</code></td>
+<td style="text-align: center;"><code>9f</code></td>
+<td style="text-align: center;"><code>a8</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>7</code></td>
+<td style="text-align: center;"><code>51</code></td>
+<td style="text-align: center;"><code>a3</code></td>
+<td style="text-align: center;"><code>40</code></td>
+<td style="text-align: center;"><code>8f</code></td>
+<td style="text-align: center;"><code>92</code></td>
+<td style="text-align: center;"><code>9d</code></td>
+<td style="text-align: center;"><code>38</code></td>
+<td style="text-align: center;"><code>f5</code></td>
+<td style="text-align: center;"><code>bc</code></td>
+<td style="text-align: center;"><code>b6</code></td>
+<td style="text-align: center;"><code>da</code></td>
+<td style="text-align: center;"><code>21</code></td>
+<td style="text-align: center;"><code>10</code></td>
+<td style="text-align: center;"><code>ff</code></td>
+<td style="text-align: center;"><code>f3</code></td>
+<td style="text-align: center;"><code>d2</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>8</code></td>
+<td style="text-align: center;"><code>cd</code></td>
+<td style="text-align: center;"><code>0c</code></td>
+<td style="text-align: center;"><code>13</code></td>
+<td style="text-align: center;"><code>ec</code></td>
+<td style="text-align: center;"><code>5f</code></td>
+<td style="text-align: center;"><code>97</code></td>
+<td style="text-align: center;"><code>44</code></td>
+<td style="text-align: center;"><code>17</code></td>
+<td style="text-align: center;"><code>c4</code></td>
+<td style="text-align: center;"><code>a7</code></td>
+<td style="text-align: center;"><code>7e</code></td>
+<td style="text-align: center;"><code>3d</code></td>
+<td style="text-align: center;"><code>64</code></td>
+<td style="text-align: center;"><code>5d</code></td>
+<td style="text-align: center;"><code>19</code></td>
+<td style="text-align: center;"><code>73</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>9</code></td>
+<td style="text-align: center;"><code>60</code></td>
+<td style="text-align: center;"><code>81</code></td>
+<td style="text-align: center;"><code>4f</code></td>
+<td style="text-align: center;"><code>dc</code></td>
+<td style="text-align: center;"><code>22</code></td>
+<td style="text-align: center;"><code>2a</code></td>
+<td style="text-align: center;"><code>90</code></td>
+<td style="text-align: center;"><code>88</code></td>
+<td style="text-align: center;"><code>46</code></td>
+<td style="text-align: center;"><code>ee</code></td>
+<td style="text-align: center;"><code>b8</code></td>
+<td style="text-align: center;"><code>14</code></td>
+<td style="text-align: center;"><code>de</code></td>
+<td style="text-align: center;"><code>5e</code></td>
+<td style="text-align: center;"><code>0b</code></td>
+<td style="text-align: center;"><code>db</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>a</code></td>
+<td style="text-align: center;"><code>e0</code></td>
+<td style="text-align: center;"><code>32</code></td>
+<td style="text-align: center;"><code>3a</code></td>
+<td style="text-align: center;"><code>0a</code></td>
+<td style="text-align: center;"><code>49</code></td>
+<td style="text-align: center;"><code>06</code></td>
+<td style="text-align: center;"><code>24</code></td>
+<td style="text-align: center;"><code>5c</code></td>
+<td style="text-align: center;"><code>c2</code></td>
+<td style="text-align: center;"><code>d3</code></td>
+<td style="text-align: center;"><code>ac</code></td>
+<td style="text-align: center;"><code>62</code></td>
+<td style="text-align: center;"><code>91</code></td>
+<td style="text-align: center;"><code>95</code></td>
+<td style="text-align: center;"><code>e4</code></td>
+<td style="text-align: center;"><code>79</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>b</code></td>
+<td style="text-align: center;"><code>e7</code></td>
+<td style="text-align: center;"><code>c8</code></td>
+<td style="text-align: center;"><code>37</code></td>
+<td style="text-align: center;"><code>6d</code></td>
+<td style="text-align: center;"><code>8d</code></td>
+<td style="text-align: center;"><code>d5</code></td>
+<td style="text-align: center;"><code>4e</code></td>
+<td style="text-align: center;"><code>a9</code></td>
+<td style="text-align: center;"><code>6c</code></td>
+<td style="text-align: center;"><code>56</code></td>
+<td style="text-align: center;"><code>f4</code></td>
+<td style="text-align: center;"><code>ea</code></td>
+<td style="text-align: center;"><code>65</code></td>
+<td style="text-align: center;"><code>7a</code></td>
+<td style="text-align: center;"><code>ae</code></td>
+<td style="text-align: center;"><code>08</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>c</code></td>
+<td style="text-align: center;"><code>ba</code></td>
+<td style="text-align: center;"><code>78</code></td>
+<td style="text-align: center;"><code>25</code></td>
+<td style="text-align: center;"><code>2e</code></td>
+<td style="text-align: center;"><code>1c</code></td>
+<td style="text-align: center;"><code>a6</code></td>
+<td style="text-align: center;"><code>b4</code></td>
+<td style="text-align: center;"><code>c6</code></td>
+<td style="text-align: center;"><code>e8</code></td>
+<td style="text-align: center;"><code>dd</code></td>
+<td style="text-align: center;"><code>74</code></td>
+<td style="text-align: center;"><code>1f</code></td>
+<td style="text-align: center;"><code>4b</code></td>
+<td style="text-align: center;"><code>bd</code></td>
+<td style="text-align: center;"><code>8b</code></td>
+<td style="text-align: center;"><code>8a</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>d</code></td>
+<td style="text-align: center;"><code>70</code></td>
+<td style="text-align: center;"><code>3e</code></td>
+<td style="text-align: center;"><code>b5</code></td>
+<td style="text-align: center;"><code>66</code></td>
+<td style="text-align: center;"><code>48</code></td>
+<td style="text-align: center;"><code>03</code></td>
+<td style="text-align: center;"><code>f6</code></td>
+<td style="text-align: center;"><code>0e</code></td>
+<td style="text-align: center;"><code>61</code></td>
+<td style="text-align: center;"><code>35</code></td>
+<td style="text-align: center;"><code>57</code></td>
+<td style="text-align: center;"><code>b9</code></td>
+<td style="text-align: center;"><code>86</code></td>
+<td style="text-align: center;"><code>c1</code></td>
+<td style="text-align: center;"><code>1d</code></td>
+<td style="text-align: center;"><code>9e</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>e</code></td>
+<td style="text-align: center;"><code>e1</code></td>
+<td style="text-align: center;"><code>f8</code></td>
+<td style="text-align: center;"><code>98</code></td>
+<td style="text-align: center;"><code>11</code></td>
+<td style="text-align: center;"><code>69</code></td>
+<td style="text-align: center;"><code>d9</code></td>
+<td style="text-align: center;"><code>8e</code></td>
+<td style="text-align: center;"><code>94</code></td>
+<td style="text-align: center;"><code>9b</code></td>
+<td style="text-align: center;"><code>1e</code></td>
+<td style="text-align: center;"><code>87</code></td>
+<td style="text-align: center;"><code>e9</code></td>
+<td style="text-align: center;"><code>ce</code></td>
+<td style="text-align: center;"><code>55</code></td>
+<td style="text-align: center;"><code>28</code></td>
+<td style="text-align: center;"><code>df</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>f</code></td>
+<td style="text-align: center;"><code>8c</code></td>
+<td style="text-align: center;"><code>a1</code></td>
+<td style="text-align: center;"><code>89</code></td>
+<td style="text-align: center;"><code>0d</code></td>
+<td style="text-align: center;"><code>bf</code></td>
+<td style="text-align: center;"><code>e6</code></td>
+<td style="text-align: center;"><code>42</code></td>
+<td style="text-align: center;"><code>68</code></td>
+<td style="text-align: center;"><code>41</code></td>
+<td style="text-align: center;"><code>99</code></td>
+<td style="text-align: center;"><code>2d</code></td>
+<td style="text-align: center;"><code>0f</code></td>
+<td style="text-align: center;"><code>b0</code></td>
+<td style="text-align: center;"><code>54</code></td>
+<td style="text-align: center;"><code>bb</code></td>
+<td style="text-align: center;"><code>16</code></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 data-number="10.1" id="normalized-xorand-graph"><span
+class="header-section-number">10.1</span> Normalized XOR–AND graph</h2>
+<p>The following certificate absorbs all affine gates into masks. Mask
+bit 0 is the constant 1, mask bits 1–8 are <span
+class="math inline">\(U_0,\ldots,U_7\)</span>, and each later basis bit
+is the output of one preceding AND row. It therefore gives a compact,
+implementation-independent description of the 29 nonlinear gates and the
+eight final affine output masks.</p>
+<p class="listing-caption">Listing 1: Normalized 29-AND XAG certificate.</p><div class="sourceCode" id="lst:xag" data-language="bash"
+data-caption="Normalized 29-AND XAG certificate." label="lst:xag"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="lst:xag-1"><a href="#lst:xag-1" aria-hidden="true" tabindex="-1"></a><span class="ex">AES29-XAG</span> 1</span>
+<span id="lst:xag-2"><a href="#lst:xag-2" aria-hidden="true" tabindex="-1"></a><span class="ex">AND_COUNT</span> 29</span>
+<span id="lst:xag-3"><a href="#lst:xag-3" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A01 1e4 10e</span>
+<span id="lst:xag-4"><a href="#lst:xag-4" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A02 10c 18c</span>
+<span id="lst:xag-5"><a href="#lst:xag-5" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A03 e8 82</span>
+<span id="lst:xag-6"><a href="#lst:xag-6" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A04 1b2 1ce</span>
+<span id="lst:xag-7"><a href="#lst:xag-7" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A05 b2 d2</span>
+<span id="lst:xag-8"><a href="#lst:xag-8" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A06 100 11c</span>
+<span id="lst:xag-9"><a href="#lst:xag-9" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A07 56 c0</span>
+<span id="lst:xag-10"><a href="#lst:xag-10" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A08 1be 15e</span>
+<span id="lst:xag-11"><a href="#lst:xag-11" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A09 1e8 19e</span>
+<span id="lst:xag-12"><a href="#lst:xag-12" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A10 1ecf6 1d06a</span>
+<span id="lst:xag-13"><a href="#lst:xag-13" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A11 2b60a 730ea</span>
+<span id="lst:xag-14"><a href="#lst:xag-14" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A12 75afc 2e080</span>
+<span id="lst:xag-15"><a href="#lst:xag-15" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A13 330ea 140000</span>
+<span id="lst:xag-16"><a href="#lst:xag-16" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A14 b5afc 2730ea</span>
+<span id="lst:xag-17"><a href="#lst:xag-17" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A15 42b7ec b5a94</span>
+<span id="lst:xag-18"><a href="#lst:xag-18" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A16 42b76e b5b9a</span>
+<span id="lst:xag-19"><a href="#lst:xag-19" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A17 49ed92 b5afe</span>
+<span id="lst:xag-20"><a href="#lst:xag-20" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A18 42b662 b5b72</span>
+<span id="lst:xag-21"><a href="#lst:xag-21" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A19 49ec9e b5b1a</span>
+<span id="lst:xag-22"><a href="#lst:xag-22" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A20 21d0a4 32e1e0</span>
+<span id="lst:xag-23"><a href="#lst:xag-23" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A21 21d1b8 32e02e</span>
+<span id="lst:xag-24"><a href="#lst:xag-24" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A22 133138 32e1fc</span>
+<span id="lst:xag-25"><a href="#lst:xag-25" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A23 21d10a 32e12e</span>
+<span id="lst:xag-26"><a href="#lst:xag-26" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A24 13318a 32e04e</span>
+<span id="lst:xag-27"><a href="#lst:xag-27" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A25 636748 39bb74</span>
+<span id="lst:xag-28"><a href="#lst:xag-28" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A26 6366d6 39bbb4</span>
+<span id="lst:xag-29"><a href="#lst:xag-29" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A27 5adcaa 39bb02</span>
+<span id="lst:xag-30"><a href="#lst:xag-30" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A28 636768 39ba5c</span>
+<span id="lst:xag-31"><a href="#lst:xag-31" aria-hidden="true" tabindex="-1"></a><span class="ex">AND</span> A29 5add14 39bb54</span>
+<span id="lst:xag-32"><a href="#lst:xag-32" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT_COUNT</span> 8</span>
+<span id="lst:xag-33"><a href="#lst:xag-33" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S0 2491ba35ce</span>
+<span id="lst:xag-34"><a href="#lst:xag-34" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S1 257bba3b95</span>
+<span id="lst:xag-35"><a href="#lst:xag-35" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S2 2e6532ee01</span>
+<span id="lst:xag-36"><a href="#lst:xag-36" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S3 19dbba4b98</span>
+<span id="lst:xag-37"><a href="#lst:xag-37" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S4 189eba357c</span>
+<span id="lst:xag-38"><a href="#lst:xag-38" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S5 c0332e152</span>
+<span id="lst:xag-39"><a href="#lst:xag-39" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S6 db00b2bf9</span>
+<span id="lst:xag-40"><a href="#lst:xag-40" aria-hidden="true" tabindex="-1"></a><span class="ex">OUTPUT</span> S7 19b508a44b</span>
+<span id="lst:xag-41"><a href="#lst:xag-41" aria-hidden="true" tabindex="-1"></a><span class="ex">END</span></span></code></pre></div>
+<h1 data-number="C" id="app:artifacts"><span
+class="header-section-number">C</span> Repository artifacts and
+standalone verification</h1>
+<p>This final appendix identifies the executable artifacts corresponding
+to the mathematical objects above. Internal repository paths are
+confined to this appendix.</p>
+<div id="tab:artifacts">
+<div class="table-wrap"><table>
+<caption>Principal released artifacts and fixed SHA-256
+digests.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">artifact</th>
+<th style="text-align: left;">digest or role</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="even">
+<td style="text-align: left;"></td>
+<td
+style="text-align: left;"><code>f41861c4b15bc78840708a5da2fab6ca9dd204c1e3e572cae49912c713bf18d3</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td
+style="text-align: left;"><code>cecd0c7abba9920ff2af7ec204fcd01f97db135a4c43d8afd7f83d65c2e382ca</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td
+style="text-align: left;"><code>862446d12293b21bfafbd7e958502301619a596e6bf3cb7a3b22f3f830926264</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td
+style="text-align: left;"><code>1e847a85e3abe783d98e3d4c48a7d9eb845caab96903c175657cce06119c6925</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td
+style="text-align: left;"><code>d72ca4cd9617b365587a3b826ab3a0d37489187cdd67fca18ff50b1d3d5e0083</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">exact bytes of the official NIST SLP;
+<code>6ba4f63b832a1f4520a76cab5680e673fdd744ad2651918882eeecff7957698a</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">strict parser and exhaustive evaluator for
+the complete staged certificate</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">strict standalone SLP parser, FIPS
+algebraic/table cross-check, exhaustive evaluator, tally, and depth
+checker</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">independent NIST target derivation, formal
+4096-point bridge, and staged 256-point check</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">redundant full verification suite</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>The shortest checks of the two direct certificates are</p>
+<div class="sourceCode" id="cb1" data-language="bash"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> verify/verify_staged29.py</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> verify/minimal_verify.py</span></code></pre></div>
+<p>The complete redundant audit is</p>
+<div class="sourceCode" id="cb2" data-language="bash"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./verify/run_all.sh</span></span></code></pre></div>
+<p>The canonical paper source is . The release process first generates
+the included tables, compiles that TeX source to , and only after the
+PDF exists renders the same expanded TeX source as the mathematical
+GitHub Pages document . The HTML is therefore a second rendering of the
+paper, not a separate informal article. Public copies of the circuit,
+certificates, verifier, and PDF are placed in and checked byte for
+byte.</p>
+<h2 data-number="11.1"
+id="standalone-exhaustive-implementation-verifier"><span
+class="header-section-number">11.1</span> Standalone exhaustive
+implementation verifier</h2>
+<p>The following listing uses only the Python standard library. It
+contains a literal copy of the FIPS S-box table, independently computes
+the algebraic definition, strictly parses the complete released SLP
+container, checks exact counts and depths, and evaluates all 256
+inputs.</p>
+<p class="listing-caption">Listing 2: Standalone exhaustive verifier.</p><div class="sourceCode" id="lst:minimal" data-language="Python"
+data-caption="Standalone exhaustive verifier." label="lst:minimal"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="lst:minimal-1"><a href="#lst:minimal-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env python3</span></span>
+<span id="lst:minimal-2"><a href="#lst:minimal-2" aria-hidden="true" tabindex="-1"></a><span class="co">&quot;&quot;&quot;Standalone exhaustive verifier for the released 29-AND AES S-box SLP.</span></span>
+<span id="lst:minimal-3"><a href="#lst:minimal-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-4"><a href="#lst:minimal-4" aria-hidden="true" tabindex="-1"></a><span class="co">Only the Python standard library is used.  The checker strictly parses the</span></span>
+<span id="lst:minimal-5"><a href="#lst:minimal-5" aria-hidden="true" tabindex="-1"></a><span class="co">complete circuit container, verifies all data dependencies and exact gate</span></span>
+<span id="lst:minimal-6"><a href="#lst:minimal-6" aria-hidden="true" tabindex="-1"></a><span class="co">counts, independently checks the literal FIPS 197 table against the algebraic</span></span>
+<span id="lst:minimal-7"><a href="#lst:minimal-7" aria-hidden="true" tabindex="-1"></a><span class="co">S-box definition, and evaluates the circuit on every one of the 256 inputs.</span></span>
+<span id="lst:minimal-8"><a href="#lst:minimal-8" aria-hidden="true" tabindex="-1"></a><span class="co">U0 and S0 are the most significant bits.</span></span>
+<span id="lst:minimal-9"><a href="#lst:minimal-9" aria-hidden="true" tabindex="-1"></a><span class="co">&quot;&quot;&quot;</span></span>
+<span id="lst:minimal-10"><a href="#lst:minimal-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="lst:minimal-11"><a href="#lst:minimal-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-12"><a href="#lst:minimal-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> Counter</span>
+<span id="lst:minimal-13"><a href="#lst:minimal-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="lst:minimal-14"><a href="#lst:minimal-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> hashlib</span>
+<span id="lst:minimal-15"><a href="#lst:minimal-15" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="lst:minimal-16"><a href="#lst:minimal-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="lst:minimal-17"><a href="#lst:minimal-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-18"><a href="#lst:minimal-18" aria-hidden="true" tabindex="-1"></a>ROOT <span class="op">=</span> Path(<span class="va">__file__</span>).resolve().parents[<span class="dv">1</span>]</span>
+<span id="lst:minimal-19"><a href="#lst:minimal-19" aria-hidden="true" tabindex="-1"></a>DEFAULT <span class="op">=</span> ROOT <span class="op">/</span> <span class="st">&quot;circuits&quot;</span> <span class="op">/</span> <span class="st">&quot;aes-sbox-fwd-g228-a29-d35-ad6.slp&quot;</span></span>
+<span id="lst:minimal-20"><a href="#lst:minimal-20" aria-hidden="true" tabindex="-1"></a>DEFAULT_SHA256 <span class="op">=</span> <span class="st">&quot;f41861c4b15bc78840708a5da2fab6ca9dd204c1e3e572cae49912c713bf18d3&quot;</span></span>
+<span id="lst:minimal-21"><a href="#lst:minimal-21" aria-hidden="true" tabindex="-1"></a>FIPS_SBOX <span class="op">=</span> (</span>
+<span id="lst:minimal-22"><a href="#lst:minimal-22" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x63</span>, <span class="bn">0x7c</span>, <span class="bn">0x77</span>, <span class="bn">0x7b</span>, <span class="bn">0xf2</span>, <span class="bn">0x6b</span>, <span class="bn">0x6f</span>, <span class="bn">0xc5</span>, <span class="bn">0x30</span>, <span class="bn">0x01</span>, <span class="bn">0x67</span>, <span class="bn">0x2b</span>, <span class="bn">0xfe</span>, <span class="bn">0xd7</span>, <span class="bn">0xab</span>, <span class="bn">0x76</span>,</span>
+<span id="lst:minimal-23"><a href="#lst:minimal-23" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xca</span>, <span class="bn">0x82</span>, <span class="bn">0xc9</span>, <span class="bn">0x7d</span>, <span class="bn">0xfa</span>, <span class="bn">0x59</span>, <span class="bn">0x47</span>, <span class="bn">0xf0</span>, <span class="bn">0xad</span>, <span class="bn">0xd4</span>, <span class="bn">0xa2</span>, <span class="bn">0xaf</span>, <span class="bn">0x9c</span>, <span class="bn">0xa4</span>, <span class="bn">0x72</span>, <span class="bn">0xc0</span>,</span>
+<span id="lst:minimal-24"><a href="#lst:minimal-24" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xb7</span>, <span class="bn">0xfd</span>, <span class="bn">0x93</span>, <span class="bn">0x26</span>, <span class="bn">0x36</span>, <span class="bn">0x3f</span>, <span class="bn">0xf7</span>, <span class="bn">0xcc</span>, <span class="bn">0x34</span>, <span class="bn">0xa5</span>, <span class="bn">0xe5</span>, <span class="bn">0xf1</span>, <span class="bn">0x71</span>, <span class="bn">0xd8</span>, <span class="bn">0x31</span>, <span class="bn">0x15</span>,</span>
+<span id="lst:minimal-25"><a href="#lst:minimal-25" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x04</span>, <span class="bn">0xc7</span>, <span class="bn">0x23</span>, <span class="bn">0xc3</span>, <span class="bn">0x18</span>, <span class="bn">0x96</span>, <span class="bn">0x05</span>, <span class="bn">0x9a</span>, <span class="bn">0x07</span>, <span class="bn">0x12</span>, <span class="bn">0x80</span>, <span class="bn">0xe2</span>, <span class="bn">0xeb</span>, <span class="bn">0x27</span>, <span class="bn">0xb2</span>, <span class="bn">0x75</span>,</span>
+<span id="lst:minimal-26"><a href="#lst:minimal-26" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x09</span>, <span class="bn">0x83</span>, <span class="bn">0x2c</span>, <span class="bn">0x1a</span>, <span class="bn">0x1b</span>, <span class="bn">0x6e</span>, <span class="bn">0x5a</span>, <span class="bn">0xa0</span>, <span class="bn">0x52</span>, <span class="bn">0x3b</span>, <span class="bn">0xd6</span>, <span class="bn">0xb3</span>, <span class="bn">0x29</span>, <span class="bn">0xe3</span>, <span class="bn">0x2f</span>, <span class="bn">0x84</span>,</span>
+<span id="lst:minimal-27"><a href="#lst:minimal-27" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x53</span>, <span class="bn">0xd1</span>, <span class="bn">0x00</span>, <span class="bn">0xed</span>, <span class="bn">0x20</span>, <span class="bn">0xfc</span>, <span class="bn">0xb1</span>, <span class="bn">0x5b</span>, <span class="bn">0x6a</span>, <span class="bn">0xcb</span>, <span class="bn">0xbe</span>, <span class="bn">0x39</span>, <span class="bn">0x4a</span>, <span class="bn">0x4c</span>, <span class="bn">0x58</span>, <span class="bn">0xcf</span>,</span>
+<span id="lst:minimal-28"><a href="#lst:minimal-28" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xd0</span>, <span class="bn">0xef</span>, <span class="bn">0xaa</span>, <span class="bn">0xfb</span>, <span class="bn">0x43</span>, <span class="bn">0x4d</span>, <span class="bn">0x33</span>, <span class="bn">0x85</span>, <span class="bn">0x45</span>, <span class="bn">0xf9</span>, <span class="bn">0x02</span>, <span class="bn">0x7f</span>, <span class="bn">0x50</span>, <span class="bn">0x3c</span>, <span class="bn">0x9f</span>, <span class="bn">0xa8</span>,</span>
+<span id="lst:minimal-29"><a href="#lst:minimal-29" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x51</span>, <span class="bn">0xa3</span>, <span class="bn">0x40</span>, <span class="bn">0x8f</span>, <span class="bn">0x92</span>, <span class="bn">0x9d</span>, <span class="bn">0x38</span>, <span class="bn">0xf5</span>, <span class="bn">0xbc</span>, <span class="bn">0xb6</span>, <span class="bn">0xda</span>, <span class="bn">0x21</span>, <span class="bn">0x10</span>, <span class="bn">0xff</span>, <span class="bn">0xf3</span>, <span class="bn">0xd2</span>,</span>
+<span id="lst:minimal-30"><a href="#lst:minimal-30" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xcd</span>, <span class="bn">0x0c</span>, <span class="bn">0x13</span>, <span class="bn">0xec</span>, <span class="bn">0x5f</span>, <span class="bn">0x97</span>, <span class="bn">0x44</span>, <span class="bn">0x17</span>, <span class="bn">0xc4</span>, <span class="bn">0xa7</span>, <span class="bn">0x7e</span>, <span class="bn">0x3d</span>, <span class="bn">0x64</span>, <span class="bn">0x5d</span>, <span class="bn">0x19</span>, <span class="bn">0x73</span>,</span>
+<span id="lst:minimal-31"><a href="#lst:minimal-31" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x60</span>, <span class="bn">0x81</span>, <span class="bn">0x4f</span>, <span class="bn">0xdc</span>, <span class="bn">0x22</span>, <span class="bn">0x2a</span>, <span class="bn">0x90</span>, <span class="bn">0x88</span>, <span class="bn">0x46</span>, <span class="bn">0xee</span>, <span class="bn">0xb8</span>, <span class="bn">0x14</span>, <span class="bn">0xde</span>, <span class="bn">0x5e</span>, <span class="bn">0x0b</span>, <span class="bn">0xdb</span>,</span>
+<span id="lst:minimal-32"><a href="#lst:minimal-32" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xe0</span>, <span class="bn">0x32</span>, <span class="bn">0x3a</span>, <span class="bn">0x0a</span>, <span class="bn">0x49</span>, <span class="bn">0x06</span>, <span class="bn">0x24</span>, <span class="bn">0x5c</span>, <span class="bn">0xc2</span>, <span class="bn">0xd3</span>, <span class="bn">0xac</span>, <span class="bn">0x62</span>, <span class="bn">0x91</span>, <span class="bn">0x95</span>, <span class="bn">0xe4</span>, <span class="bn">0x79</span>,</span>
+<span id="lst:minimal-33"><a href="#lst:minimal-33" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xe7</span>, <span class="bn">0xc8</span>, <span class="bn">0x37</span>, <span class="bn">0x6d</span>, <span class="bn">0x8d</span>, <span class="bn">0xd5</span>, <span class="bn">0x4e</span>, <span class="bn">0xa9</span>, <span class="bn">0x6c</span>, <span class="bn">0x56</span>, <span class="bn">0xf4</span>, <span class="bn">0xea</span>, <span class="bn">0x65</span>, <span class="bn">0x7a</span>, <span class="bn">0xae</span>, <span class="bn">0x08</span>,</span>
+<span id="lst:minimal-34"><a href="#lst:minimal-34" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xba</span>, <span class="bn">0x78</span>, <span class="bn">0x25</span>, <span class="bn">0x2e</span>, <span class="bn">0x1c</span>, <span class="bn">0xa6</span>, <span class="bn">0xb4</span>, <span class="bn">0xc6</span>, <span class="bn">0xe8</span>, <span class="bn">0xdd</span>, <span class="bn">0x74</span>, <span class="bn">0x1f</span>, <span class="bn">0x4b</span>, <span class="bn">0xbd</span>, <span class="bn">0x8b</span>, <span class="bn">0x8a</span>,</span>
+<span id="lst:minimal-35"><a href="#lst:minimal-35" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x70</span>, <span class="bn">0x3e</span>, <span class="bn">0xb5</span>, <span class="bn">0x66</span>, <span class="bn">0x48</span>, <span class="bn">0x03</span>, <span class="bn">0xf6</span>, <span class="bn">0x0e</span>, <span class="bn">0x61</span>, <span class="bn">0x35</span>, <span class="bn">0x57</span>, <span class="bn">0xb9</span>, <span class="bn">0x86</span>, <span class="bn">0xc1</span>, <span class="bn">0x1d</span>, <span class="bn">0x9e</span>,</span>
+<span id="lst:minimal-36"><a href="#lst:minimal-36" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0xe1</span>, <span class="bn">0xf8</span>, <span class="bn">0x98</span>, <span class="bn">0x11</span>, <span class="bn">0x69</span>, <span class="bn">0xd9</span>, <span class="bn">0x8e</span>, <span class="bn">0x94</span>, <span class="bn">0x9b</span>, <span class="bn">0x1e</span>, <span class="bn">0x87</span>, <span class="bn">0xe9</span>, <span class="bn">0xce</span>, <span class="bn">0x55</span>, <span class="bn">0x28</span>, <span class="bn">0xdf</span>,</span>
+<span id="lst:minimal-37"><a href="#lst:minimal-37" aria-hidden="true" tabindex="-1"></a>    <span class="bn">0x8c</span>, <span class="bn">0xa1</span>, <span class="bn">0x89</span>, <span class="bn">0x0d</span>, <span class="bn">0xbf</span>, <span class="bn">0xe6</span>, <span class="bn">0x42</span>, <span class="bn">0x68</span>, <span class="bn">0x41</span>, <span class="bn">0x99</span>, <span class="bn">0x2d</span>, <span class="bn">0x0f</span>, <span class="bn">0xb0</span>, <span class="bn">0x54</span>, <span class="bn">0xbb</span>, <span class="bn">0x16</span>,</span>
+<span id="lst:minimal-38"><a href="#lst:minimal-38" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="lst:minimal-39"><a href="#lst:minimal-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-40"><a href="#lst:minimal-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-41"><a href="#lst:minimal-41" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> require(condition: <span class="bu">bool</span>, message: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="lst:minimal-42"><a href="#lst:minimal-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> condition:</span>
+<span id="lst:minimal-43"><a href="#lst:minimal-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">SystemExit</span>(<span class="ss">f&quot;FAIL: </span><span class="sc">{</span>message<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-44"><a href="#lst:minimal-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-45"><a href="#lst:minimal-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-46"><a href="#lst:minimal-46" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gf256_mul(a: <span class="bu">int</span>, b: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="lst:minimal-47"><a href="#lst:minimal-47" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="dv">0</span></span>
+<span id="lst:minimal-48"><a href="#lst:minimal-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>):</span>
+<span id="lst:minimal-49"><a href="#lst:minimal-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> b <span class="op">&amp;</span> <span class="dv">1</span>:</span>
+<span id="lst:minimal-50"><a href="#lst:minimal-50" aria-hidden="true" tabindex="-1"></a>            result <span class="op">^=</span> a</span>
+<span id="lst:minimal-51"><a href="#lst:minimal-51" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> ((a <span class="op">&lt;&lt;</span> <span class="dv">1</span>) <span class="op">&amp;</span> <span class="bn">0xFF</span>) <span class="op">^</span> (<span class="bn">0x1B</span> <span class="cf">if</span> a <span class="op">&amp;</span> <span class="bn">0x80</span> <span class="cf">else</span> <span class="dv">0</span>)</span>
+<span id="lst:minimal-52"><a href="#lst:minimal-52" aria-hidden="true" tabindex="-1"></a>        b <span class="op">&gt;&gt;=</span> <span class="dv">1</span></span>
+<span id="lst:minimal-53"><a href="#lst:minimal-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> result</span>
+<span id="lst:minimal-54"><a href="#lst:minimal-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-55"><a href="#lst:minimal-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-56"><a href="#lst:minimal-56" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> aes_sbox_algebraic(x: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="lst:minimal-57"><a href="#lst:minimal-57" aria-hidden="true" tabindex="-1"></a>    inverse <span class="op">=</span> <span class="dv">0</span></span>
+<span id="lst:minimal-58"><a href="#lst:minimal-58" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> x:</span>
+<span id="lst:minimal-59"><a href="#lst:minimal-59" aria-hidden="true" tabindex="-1"></a>        inverse, base, exponent <span class="op">=</span> <span class="dv">1</span>, x, <span class="dv">254</span></span>
+<span id="lst:minimal-60"><a href="#lst:minimal-60" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> exponent:</span>
+<span id="lst:minimal-61"><a href="#lst:minimal-61" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> exponent <span class="op">&amp;</span> <span class="dv">1</span>:</span>
+<span id="lst:minimal-62"><a href="#lst:minimal-62" aria-hidden="true" tabindex="-1"></a>                inverse <span class="op">=</span> gf256_mul(inverse, base)</span>
+<span id="lst:minimal-63"><a href="#lst:minimal-63" aria-hidden="true" tabindex="-1"></a>            base <span class="op">=</span> gf256_mul(base, base)</span>
+<span id="lst:minimal-64"><a href="#lst:minimal-64" aria-hidden="true" tabindex="-1"></a>            exponent <span class="op">&gt;&gt;=</span> <span class="dv">1</span></span>
+<span id="lst:minimal-65"><a href="#lst:minimal-65" aria-hidden="true" tabindex="-1"></a>    output <span class="op">=</span> <span class="dv">0</span></span>
+<span id="lst:minimal-66"><a href="#lst:minimal-66" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>):</span>
+<span id="lst:minimal-67"><a href="#lst:minimal-67" aria-hidden="true" tabindex="-1"></a>        bit <span class="op">=</span> (</span>
+<span id="lst:minimal-68"><a href="#lst:minimal-68" aria-hidden="true" tabindex="-1"></a>            ((inverse <span class="op">&gt;&gt;</span> i) <span class="op">&amp;</span> <span class="dv">1</span>)</span>
+<span id="lst:minimal-69"><a href="#lst:minimal-69" aria-hidden="true" tabindex="-1"></a>            <span class="op">^</span> ((inverse <span class="op">&gt;&gt;</span> ((i <span class="op">+</span> <span class="dv">4</span>) <span class="op">&amp;</span> <span class="dv">7</span>)) <span class="op">&amp;</span> <span class="dv">1</span>)</span>
+<span id="lst:minimal-70"><a href="#lst:minimal-70" aria-hidden="true" tabindex="-1"></a>            <span class="op">^</span> ((inverse <span class="op">&gt;&gt;</span> ((i <span class="op">+</span> <span class="dv">5</span>) <span class="op">&amp;</span> <span class="dv">7</span>)) <span class="op">&amp;</span> <span class="dv">1</span>)</span>
+<span id="lst:minimal-71"><a href="#lst:minimal-71" aria-hidden="true" tabindex="-1"></a>            <span class="op">^</span> ((inverse <span class="op">&gt;&gt;</span> ((i <span class="op">+</span> <span class="dv">6</span>) <span class="op">&amp;</span> <span class="dv">7</span>)) <span class="op">&amp;</span> <span class="dv">1</span>)</span>
+<span id="lst:minimal-72"><a href="#lst:minimal-72" aria-hidden="true" tabindex="-1"></a>            <span class="op">^</span> ((inverse <span class="op">&gt;&gt;</span> ((i <span class="op">+</span> <span class="dv">7</span>) <span class="op">&amp;</span> <span class="dv">7</span>)) <span class="op">&amp;</span> <span class="dv">1</span>)</span>
+<span id="lst:minimal-73"><a href="#lst:minimal-73" aria-hidden="true" tabindex="-1"></a>            <span class="op">^</span> ((<span class="bn">0x63</span> <span class="op">&gt;&gt;</span> i) <span class="op">&amp;</span> <span class="dv">1</span>)</span>
+<span id="lst:minimal-74"><a href="#lst:minimal-74" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="lst:minimal-75"><a href="#lst:minimal-75" aria-hidden="true" tabindex="-1"></a>        output <span class="op">|=</span> bit <span class="op">&lt;&lt;</span> i</span>
+<span id="lst:minimal-76"><a href="#lst:minimal-76" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> output</span>
+<span id="lst:minimal-77"><a href="#lst:minimal-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-78"><a href="#lst:minimal-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-79"><a href="#lst:minimal-79" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> parse(path: Path) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">list</span>[<span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span>]], <span class="bu">tuple</span>[<span class="bu">str</span>, ...], <span class="bu">tuple</span>[<span class="bu">str</span>, ...]]:</span>
+<span id="lst:minimal-80"><a href="#lst:minimal-80" aria-hidden="true" tabindex="-1"></a>    operations: <span class="bu">list</span>[<span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span>]] <span class="op">=</span> []</span>
+<span id="lst:minimal-81"><a href="#lst:minimal-81" aria-hidden="true" tabindex="-1"></a>    inputs <span class="op">=</span> <span class="bu">tuple</span>(<span class="ss">f&quot;U</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>))</span>
+<span id="lst:minimal-82"><a href="#lst:minimal-82" aria-hidden="true" tabindex="-1"></a>    outputs <span class="op">=</span> <span class="bu">tuple</span>(<span class="ss">f&quot;S</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">8</span>))</span>
+<span id="lst:minimal-83"><a href="#lst:minimal-83" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> <span class="st">&quot;start&quot;</span></span>
+<span id="lst:minimal-84"><a href="#lst:minimal-84" aria-hidden="true" tabindex="-1"></a>    saw_inputs <span class="op">=</span> saw_outputs <span class="op">=</span> saw_internal <span class="op">=</span> saw_syntax <span class="op">=</span> <span class="va">False</span></span>
+<span id="lst:minimal-85"><a href="#lst:minimal-85" aria-hidden="true" tabindex="-1"></a>    internal_count: <span class="bu">int</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
+<span id="lst:minimal-86"><a href="#lst:minimal-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-87"><a href="#lst:minimal-87" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> lineno, raw <span class="kw">in</span> <span class="bu">enumerate</span>(path.read_text(encoding<span class="op">=</span><span class="st">&quot;utf-8&quot;</span>).splitlines(), <span class="dv">1</span>):</span>
+<span id="lst:minimal-88"><a href="#lst:minimal-88" aria-hidden="true" tabindex="-1"></a>        line <span class="op">=</span> raw.split(<span class="st">&quot;#&quot;</span>, <span class="dv">1</span>)[<span class="dv">0</span>].strip()</span>
+<span id="lst:minimal-89"><a href="#lst:minimal-89" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> line:</span>
+<span id="lst:minimal-90"><a href="#lst:minimal-90" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="lst:minimal-91"><a href="#lst:minimal-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-92"><a href="#lst:minimal-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> state <span class="op">==</span> <span class="st">&quot;start&quot;</span>:</span>
+<span id="lst:minimal-93"><a href="#lst:minimal-93" aria-hidden="true" tabindex="-1"></a>            require(re.fullmatch(<span class="vs">r&quot;begin circuit [A-Za-z0-9_-]+&quot;</span>, line) <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>,</span>
+<span id="lst:minimal-94"><a href="#lst:minimal-94" aria-hidden="true" tabindex="-1"></a>                    <span class="ss">f&quot;expected begin circuit at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-95"><a href="#lst:minimal-95" aria-hidden="true" tabindex="-1"></a>            state <span class="op">=</span> <span class="st">&quot;header&quot;</span></span>
+<span id="lst:minimal-96"><a href="#lst:minimal-96" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="lst:minimal-97"><a href="#lst:minimal-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-98"><a href="#lst:minimal-98" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> state <span class="op">==</span> <span class="st">&quot;header&quot;</span>:</span>
+<span id="lst:minimal-99"><a href="#lst:minimal-99" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> line <span class="op">==</span> <span class="st">&quot;Inputs: U0:U7&quot;</span>:</span>
+<span id="lst:minimal-100"><a href="#lst:minimal-100" aria-hidden="true" tabindex="-1"></a>                require(<span class="kw">not</span> saw_inputs, <span class="ss">f&quot;duplicate input declaration at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-101"><a href="#lst:minimal-101" aria-hidden="true" tabindex="-1"></a>                saw_inputs <span class="op">=</span> <span class="va">True</span></span>
+<span id="lst:minimal-102"><a href="#lst:minimal-102" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="lst:minimal-103"><a href="#lst:minimal-103" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> line <span class="op">==</span> <span class="st">&quot;Outputs: S0:S7&quot;</span>:</span>
+<span id="lst:minimal-104"><a href="#lst:minimal-104" aria-hidden="true" tabindex="-1"></a>                require(saw_inputs <span class="kw">and</span> <span class="kw">not</span> saw_outputs, <span class="ss">f&quot;misordered or duplicate output declaration at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-105"><a href="#lst:minimal-105" aria-hidden="true" tabindex="-1"></a>                saw_outputs <span class="op">=</span> <span class="va">True</span></span>
+<span id="lst:minimal-106"><a href="#lst:minimal-106" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="lst:minimal-107"><a href="#lst:minimal-107" aria-hidden="true" tabindex="-1"></a>            match <span class="op">=</span> re.fullmatch(<span class="vs">r&quot;Internal: t1:t([1-9][0-9]*)&quot;</span>, line)</span>
+<span id="lst:minimal-108"><a href="#lst:minimal-108" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> match:</span>
+<span id="lst:minimal-109"><a href="#lst:minimal-109" aria-hidden="true" tabindex="-1"></a>                require(saw_outputs <span class="kw">and</span> <span class="kw">not</span> saw_internal, <span class="ss">f&quot;misordered or duplicate internal declaration at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-110"><a href="#lst:minimal-110" aria-hidden="true" tabindex="-1"></a>                internal_count <span class="op">=</span> <span class="bu">int</span>(match.group(<span class="dv">1</span>))</span>
+<span id="lst:minimal-111"><a href="#lst:minimal-111" aria-hidden="true" tabindex="-1"></a>                saw_internal <span class="op">=</span> <span class="va">True</span></span>
+<span id="lst:minimal-112"><a href="#lst:minimal-112" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="lst:minimal-113"><a href="#lst:minimal-113" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> line <span class="op">==</span> <span class="st">&quot;GateSyntax: GateName Output Inputs&quot;</span>:</span>
+<span id="lst:minimal-114"><a href="#lst:minimal-114" aria-hidden="true" tabindex="-1"></a>                require(saw_internal <span class="kw">and</span> <span class="kw">not</span> saw_syntax, <span class="ss">f&quot;misordered or duplicate gate syntax at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-115"><a href="#lst:minimal-115" aria-hidden="true" tabindex="-1"></a>                saw_syntax <span class="op">=</span> <span class="va">True</span></span>
+<span id="lst:minimal-116"><a href="#lst:minimal-116" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="lst:minimal-117"><a href="#lst:minimal-117" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> line <span class="op">==</span> <span class="st">&quot;begin SLP&quot;</span>:</span>
+<span id="lst:minimal-118"><a href="#lst:minimal-118" aria-hidden="true" tabindex="-1"></a>                require(saw_inputs <span class="kw">and</span> saw_outputs <span class="kw">and</span> saw_internal <span class="kw">and</span> saw_syntax,</span>
+<span id="lst:minimal-119"><a href="#lst:minimal-119" aria-hidden="true" tabindex="-1"></a>                        <span class="ss">f&quot;incomplete circuit header before line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-120"><a href="#lst:minimal-120" aria-hidden="true" tabindex="-1"></a>                state <span class="op">=</span> <span class="st">&quot;slp&quot;</span></span>
+<span id="lst:minimal-121"><a href="#lst:minimal-121" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="lst:minimal-122"><a href="#lst:minimal-122" aria-hidden="true" tabindex="-1"></a>            require(<span class="va">False</span>, <span class="ss">f&quot;unexpected circuit-header line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>line<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-123"><a href="#lst:minimal-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-124"><a href="#lst:minimal-124" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> state <span class="op">==</span> <span class="st">&quot;slp&quot;</span>:</span>
+<span id="lst:minimal-125"><a href="#lst:minimal-125" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> line <span class="op">==</span> <span class="st">&quot;end SLP&quot;</span>:</span>
+<span id="lst:minimal-126"><a href="#lst:minimal-126" aria-hidden="true" tabindex="-1"></a>                state <span class="op">=</span> <span class="st">&quot;after_slp&quot;</span></span>
+<span id="lst:minimal-127"><a href="#lst:minimal-127" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="lst:minimal-128"><a href="#lst:minimal-128" aria-hidden="true" tabindex="-1"></a>            fields <span class="op">=</span> line.split()</span>
+<span id="lst:minimal-129"><a href="#lst:minimal-129" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="bu">len</span>(fields) <span class="op">==</span> <span class="dv">4</span> <span class="kw">and</span> fields[<span class="dv">0</span>] <span class="kw">in</span> {<span class="st">&quot;XOR&quot;</span>, <span class="st">&quot;AND&quot;</span>}:</span>
+<span id="lst:minimal-130"><a href="#lst:minimal-130" aria-hidden="true" tabindex="-1"></a>                operations.append((fields[<span class="dv">0</span>], fields[<span class="dv">1</span>], fields[<span class="dv">2</span>], fields[<span class="dv">3</span>]))</span>
+<span id="lst:minimal-131"><a href="#lst:minimal-131" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> <span class="bu">len</span>(fields) <span class="op">==</span> <span class="dv">3</span> <span class="kw">and</span> fields[<span class="dv">0</span>] <span class="op">==</span> <span class="st">&quot;NOT&quot;</span>:</span>
+<span id="lst:minimal-132"><a href="#lst:minimal-132" aria-hidden="true" tabindex="-1"></a>                operations.append((fields[<span class="dv">0</span>], fields[<span class="dv">1</span>], fields[<span class="dv">2</span>], <span class="va">None</span>))</span>
+<span id="lst:minimal-133"><a href="#lst:minimal-133" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="lst:minimal-134"><a href="#lst:minimal-134" aria-hidden="true" tabindex="-1"></a>                require(<span class="va">False</span>, <span class="ss">f&quot;illegal instruction at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>line<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-135"><a href="#lst:minimal-135" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="lst:minimal-136"><a href="#lst:minimal-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-137"><a href="#lst:minimal-137" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> state <span class="op">==</span> <span class="st">&quot;after_slp&quot;</span>:</span>
+<span id="lst:minimal-138"><a href="#lst:minimal-138" aria-hidden="true" tabindex="-1"></a>            require(line <span class="op">==</span> <span class="st">&quot;end circuit&quot;</span>, <span class="ss">f&quot;expected end circuit at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-139"><a href="#lst:minimal-139" aria-hidden="true" tabindex="-1"></a>            state <span class="op">=</span> <span class="st">&quot;done&quot;</span></span>
+<span id="lst:minimal-140"><a href="#lst:minimal-140" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="lst:minimal-141"><a href="#lst:minimal-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-142"><a href="#lst:minimal-142" aria-hidden="true" tabindex="-1"></a>        require(<span class="va">False</span>, <span class="ss">f&quot;trailing non-comment data at line </span><span class="sc">{</span>lineno<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>line<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-143"><a href="#lst:minimal-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-144"><a href="#lst:minimal-144" aria-hidden="true" tabindex="-1"></a>    require(state <span class="op">==</span> <span class="st">&quot;done&quot;</span>, <span class="st">&quot;missing or unbalanced circuit/SLP delimiters&quot;</span>)</span>
+<span id="lst:minimal-145"><a href="#lst:minimal-145" aria-hidden="true" tabindex="-1"></a>    require(internal_count <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>, <span class="st">&quot;missing internal-wire declaration&quot;</span>)</span>
+<span id="lst:minimal-146"><a href="#lst:minimal-146" aria-hidden="true" tabindex="-1"></a>    require(<span class="bu">bool</span>(operations), <span class="st">&quot;empty SLP&quot;</span>)</span>
+<span id="lst:minimal-147"><a href="#lst:minimal-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-148"><a href="#lst:minimal-148" aria-hidden="true" tabindex="-1"></a>    defined <span class="op">=</span> <span class="bu">set</span>(inputs)</span>
+<span id="lst:minimal-149"><a href="#lst:minimal-149" aria-hidden="true" tabindex="-1"></a>    temporary_outputs: <span class="bu">set</span>[<span class="bu">str</span>] <span class="op">=</span> <span class="bu">set</span>()</span>
+<span id="lst:minimal-150"><a href="#lst:minimal-150" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> kind, output, a, b <span class="kw">in</span> operations:</span>
+<span id="lst:minimal-151"><a href="#lst:minimal-151" aria-hidden="true" tabindex="-1"></a>        require(output <span class="kw">not</span> <span class="kw">in</span> defined, <span class="ss">f&quot;wire redefinition: </span><span class="sc">{</span>output<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-152"><a href="#lst:minimal-152" aria-hidden="true" tabindex="-1"></a>        require(a <span class="kw">in</span> defined, <span class="ss">f&quot;use before definition: </span><span class="sc">{</span>a<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-153"><a href="#lst:minimal-153" aria-hidden="true" tabindex="-1"></a>        require(b <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> b <span class="kw">in</span> defined, <span class="ss">f&quot;use before definition: </span><span class="sc">{</span>b<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-154"><a href="#lst:minimal-154" aria-hidden="true" tabindex="-1"></a>        require(re.fullmatch(<span class="vs">r&quot;t[1-9][0-9]*|S[0-7]&quot;</span>, output) <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>,</span>
+<span id="lst:minimal-155"><a href="#lst:minimal-155" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f&quot;undeclared output-wire name: </span><span class="sc">{</span>output<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-156"><a href="#lst:minimal-156" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> output.startswith(<span class="st">&quot;t&quot;</span>):</span>
+<span id="lst:minimal-157"><a href="#lst:minimal-157" aria-hidden="true" tabindex="-1"></a>            number <span class="op">=</span> <span class="bu">int</span>(output[<span class="dv">1</span>:])</span>
+<span id="lst:minimal-158"><a href="#lst:minimal-158" aria-hidden="true" tabindex="-1"></a>            require(<span class="dv">1</span> <span class="op">&lt;=</span> number <span class="op">&lt;=</span> internal_count, <span class="ss">f&quot;temporary outside declared range: </span><span class="sc">{</span>output<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-159"><a href="#lst:minimal-159" aria-hidden="true" tabindex="-1"></a>            temporary_outputs.add(output)</span>
+<span id="lst:minimal-160"><a href="#lst:minimal-160" aria-hidden="true" tabindex="-1"></a>        defined.add(output)</span>
+<span id="lst:minimal-161"><a href="#lst:minimal-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-162"><a href="#lst:minimal-162" aria-hidden="true" tabindex="-1"></a>    declared_temporaries <span class="op">=</span> {<span class="ss">f&quot;t</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, internal_count <span class="op">+</span> <span class="dv">1</span>)}</span>
+<span id="lst:minimal-163"><a href="#lst:minimal-163" aria-hidden="true" tabindex="-1"></a>    require(temporary_outputs <span class="op">==</span> declared_temporaries, <span class="st">&quot;declared and defined temporary-wire sets differ&quot;</span>)</span>
+<span id="lst:minimal-164"><a href="#lst:minimal-164" aria-hidden="true" tabindex="-1"></a>    require(<span class="bu">all</span>(name <span class="kw">in</span> defined <span class="cf">for</span> name <span class="kw">in</span> outputs), <span class="st">&quot;missing output wire&quot;</span>)</span>
+<span id="lst:minimal-165"><a href="#lst:minimal-165" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> operations, inputs, outputs</span>
+<span id="lst:minimal-166"><a href="#lst:minimal-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-167"><a href="#lst:minimal-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-168"><a href="#lst:minimal-168" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> evaluate(operations: <span class="bu">list</span>[<span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span>]], inputs: <span class="bu">tuple</span>[<span class="bu">str</span>, ...], outputs: <span class="bu">tuple</span>[<span class="bu">str</span>, ...], x: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="lst:minimal-169"><a href="#lst:minimal-169" aria-hidden="true" tabindex="-1"></a>    wire <span class="op">=</span> {name: (x <span class="op">&gt;&gt;</span> (<span class="dv">7</span> <span class="op">-</span> i)) <span class="op">&amp;</span> <span class="dv">1</span> <span class="cf">for</span> i, name <span class="kw">in</span> <span class="bu">enumerate</span>(inputs)}</span>
+<span id="lst:minimal-170"><a href="#lst:minimal-170" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> kind, output, a, b <span class="kw">in</span> operations:</span>
+<span id="lst:minimal-171"><a href="#lst:minimal-171" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> kind <span class="op">==</span> <span class="st">&quot;XOR&quot;</span>:</span>
+<span id="lst:minimal-172"><a href="#lst:minimal-172" aria-hidden="true" tabindex="-1"></a>            wire[output] <span class="op">=</span> wire[a] <span class="op">^</span> wire[b]  <span class="co"># type: ignore[index]</span></span>
+<span id="lst:minimal-173"><a href="#lst:minimal-173" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> kind <span class="op">==</span> <span class="st">&quot;AND&quot;</span>:</span>
+<span id="lst:minimal-174"><a href="#lst:minimal-174" aria-hidden="true" tabindex="-1"></a>            wire[output] <span class="op">=</span> wire[a] <span class="op">&amp;</span> wire[b]  <span class="co"># type: ignore[index]</span></span>
+<span id="lst:minimal-175"><a href="#lst:minimal-175" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="lst:minimal-176"><a href="#lst:minimal-176" aria-hidden="true" tabindex="-1"></a>            wire[output] <span class="op">=</span> wire[a] <span class="op">^</span> <span class="dv">1</span></span>
+<span id="lst:minimal-177"><a href="#lst:minimal-177" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(wire[name] <span class="op">&lt;&lt;</span> (<span class="dv">7</span> <span class="op">-</span> i) <span class="cf">for</span> i, name <span class="kw">in</span> <span class="bu">enumerate</span>(outputs))</span>
+<span id="lst:minimal-178"><a href="#lst:minimal-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-179"><a href="#lst:minimal-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-180"><a href="#lst:minimal-180" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> depths(operations: <span class="bu">list</span>[<span class="bu">tuple</span>[<span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span>, <span class="bu">str</span> <span class="op">|</span> <span class="va">None</span>]], inputs: <span class="bu">tuple</span>[<span class="bu">str</span>, ...], outputs: <span class="bu">tuple</span>[<span class="bu">str</span>, ...]) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">int</span>, <span class="bu">int</span>]:</span>
+<span id="lst:minimal-181"><a href="#lst:minimal-181" aria-hidden="true" tabindex="-1"></a>    gate_depth <span class="op">=</span> {name: <span class="dv">0</span> <span class="cf">for</span> name <span class="kw">in</span> inputs}</span>
+<span id="lst:minimal-182"><a href="#lst:minimal-182" aria-hidden="true" tabindex="-1"></a>    and_depth <span class="op">=</span> <span class="bu">dict</span>(gate_depth)</span>
+<span id="lst:minimal-183"><a href="#lst:minimal-183" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> kind, output, a, b <span class="kw">in</span> operations:</span>
+<span id="lst:minimal-184"><a href="#lst:minimal-184" aria-hidden="true" tabindex="-1"></a>        operands <span class="op">=</span> (a,) <span class="cf">if</span> b <span class="kw">is</span> <span class="va">None</span> <span class="cf">else</span> (a, b)</span>
+<span id="lst:minimal-185"><a href="#lst:minimal-185" aria-hidden="true" tabindex="-1"></a>        gate_depth[output] <span class="op">=</span> <span class="dv">1</span> <span class="op">+</span> <span class="bu">max</span>(gate_depth[name] <span class="cf">for</span> name <span class="kw">in</span> operands)</span>
+<span id="lst:minimal-186"><a href="#lst:minimal-186" aria-hidden="true" tabindex="-1"></a>        and_depth[output] <span class="op">=</span> <span class="bu">max</span>(and_depth[name] <span class="cf">for</span> name <span class="kw">in</span> operands) <span class="op">+</span> (<span class="dv">1</span> <span class="cf">if</span> kind <span class="op">==</span> <span class="st">&quot;AND&quot;</span> <span class="cf">else</span> <span class="dv">0</span>)</span>
+<span id="lst:minimal-187"><a href="#lst:minimal-187" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">max</span>(gate_depth[name] <span class="cf">for</span> name <span class="kw">in</span> outputs), <span class="bu">max</span>(and_depth[name] <span class="cf">for</span> name <span class="kw">in</span> outputs)</span>
+<span id="lst:minimal-188"><a href="#lst:minimal-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-189"><a href="#lst:minimal-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-190"><a href="#lst:minimal-190" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main() <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="lst:minimal-191"><a href="#lst:minimal-191" aria-hidden="true" tabindex="-1"></a>    require(<span class="bu">len</span>(sys.argv) <span class="op">&lt;=</span> <span class="dv">2</span>, <span class="st">&quot;usage: minimal_verify.py [circuit.slp]&quot;</span>)</span>
+<span id="lst:minimal-192"><a href="#lst:minimal-192" aria-hidden="true" tabindex="-1"></a>    path <span class="op">=</span> Path(sys.argv[<span class="dv">1</span>]) <span class="cf">if</span> <span class="bu">len</span>(sys.argv) <span class="op">==</span> <span class="dv">2</span> <span class="cf">else</span> DEFAULT</span>
+<span id="lst:minimal-193"><a href="#lst:minimal-193" aria-hidden="true" tabindex="-1"></a>    operations, inputs, outputs <span class="op">=</span> parse(path)</span>
+<span id="lst:minimal-194"><a href="#lst:minimal-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-195"><a href="#lst:minimal-195" aria-hidden="true" tabindex="-1"></a>    counts <span class="op">=</span> Counter(kind <span class="cf">for</span> kind, _, _, _ <span class="kw">in</span> operations)</span>
+<span id="lst:minimal-196"><a href="#lst:minimal-196" aria-hidden="true" tabindex="-1"></a>    expected_counts <span class="op">=</span> Counter({<span class="st">&quot;AND&quot;</span>: <span class="dv">29</span>, <span class="st">&quot;XOR&quot;</span>: <span class="dv">195</span>, <span class="st">&quot;NOT&quot;</span>: <span class="dv">4</span>})</span>
+<span id="lst:minimal-197"><a href="#lst:minimal-197" aria-hidden="true" tabindex="-1"></a>    require(counts <span class="op">==</span> expected_counts, <span class="ss">f&quot;unexpected operation tally: </span><span class="sc">{</span><span class="bu">dict</span>(counts)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-198"><a href="#lst:minimal-198" aria-hidden="true" tabindex="-1"></a>    require(<span class="bu">len</span>(operations) <span class="op">==</span> <span class="dv">228</span>, <span class="ss">f&quot;expected exactly 228 instructions, found </span><span class="sc">{</span><span class="bu">len</span>(operations)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-199"><a href="#lst:minimal-199" aria-hidden="true" tabindex="-1"></a>    require(depths(operations, inputs, outputs) <span class="op">==</span> (<span class="dv">35</span>, <span class="dv">6</span>), <span class="st">&quot;unexpected ordinary depth or AND-depth&quot;</span>)</span>
+<span id="lst:minimal-200"><a href="#lst:minimal-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-201"><a href="#lst:minimal-201" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> x, table_value <span class="kw">in</span> <span class="bu">enumerate</span>(FIPS_SBOX):</span>
+<span id="lst:minimal-202"><a href="#lst:minimal-202" aria-hidden="true" tabindex="-1"></a>        algebraic <span class="op">=</span> aes_sbox_algebraic(x)</span>
+<span id="lst:minimal-203"><a href="#lst:minimal-203" aria-hidden="true" tabindex="-1"></a>        require(algebraic <span class="op">==</span> table_value,</span>
+<span id="lst:minimal-204"><a href="#lst:minimal-204" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f&quot;FIPS algebraic definition and literal table disagree at </span><span class="sc">{</span>x<span class="sc">:02x}</span><span class="ss">: </span><span class="sc">{</span>algebraic<span class="sc">:02x}</span><span class="ss"> != </span><span class="sc">{</span>table_value<span class="sc">:02x}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-205"><a href="#lst:minimal-205" aria-hidden="true" tabindex="-1"></a>        obtained <span class="op">=</span> evaluate(operations, inputs, outputs, x)</span>
+<span id="lst:minimal-206"><a href="#lst:minimal-206" aria-hidden="true" tabindex="-1"></a>        require(obtained <span class="op">==</span> table_value,</span>
+<span id="lst:minimal-207"><a href="#lst:minimal-207" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f&quot;input </span><span class="sc">{</span>x<span class="sc">:02x}</span><span class="ss">: obtained </span><span class="sc">{</span>obtained<span class="sc">:02x}</span><span class="ss">, expected </span><span class="sc">{</span>table_value<span class="sc">:02x}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-208"><a href="#lst:minimal-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-209"><a href="#lst:minimal-209" aria-hidden="true" tabindex="-1"></a>    digest <span class="op">=</span> hashlib.sha256(path.read_bytes()).hexdigest()</span>
+<span id="lst:minimal-210"><a href="#lst:minimal-210" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> path.resolve() <span class="op">==</span> DEFAULT.resolve():</span>
+<span id="lst:minimal-211"><a href="#lst:minimal-211" aria-hidden="true" tabindex="-1"></a>        require(digest <span class="op">==</span> DEFAULT_SHA256, <span class="ss">f&quot;default certificate SHA-256 mismatch: </span><span class="sc">{</span>digest<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="lst:minimal-212"><a href="#lst:minimal-212" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="lst:minimal-213"><a href="#lst:minimal-213" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;PASS: &quot;</span></span>
+<span id="lst:minimal-214"><a href="#lst:minimal-214" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f&quot;</span><span class="sc">{</span><span class="bu">len</span>(operations)<span class="sc">}</span><span class="ss"> instructions; </span><span class="sc">{</span>counts[<span class="st">&#39;AND&#39;</span>]<span class="sc">}</span><span class="ss"> AND, </span><span class="sc">{</span>counts[<span class="st">&#39;XOR&#39;</span>]<span class="sc">}</span><span class="ss"> XOR, &quot;</span></span>
+<span id="lst:minimal-215"><a href="#lst:minimal-215" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f&quot;</span><span class="sc">{</span>counts[<span class="st">&#39;NOT&#39;</span>]<span class="sc">}</span><span class="ss"> NOT; depth 35; AND-depth 6; all 256 FIPS entries; sha256 </span><span class="sc">{</span>digest<span class="sc">}</span><span class="ss">&quot;</span></span>
+<span id="lst:minimal-216"><a href="#lst:minimal-216" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="lst:minimal-217"><a href="#lst:minimal-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-218"><a href="#lst:minimal-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="lst:minimal-219"><a href="#lst:minimal-219" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="lst:minimal-220"><a href="#lst:minimal-220" aria-hidden="true" tabindex="-1"></a>    main()</span></code></pre></div>
+<h1 class="unnumbered" id="bibliography">References</h1>
+<div id="refs" class="references csl-bib-body" role="list">
+<div id="ref-nistCircuitComplexity" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div
+class="csl-right-inline">National Institute of Standards and Technology,
+<span>“Circuit complexity.”</span> Accessed: Jul. 12, 2026. [Online].
+Available: <a
+href="https://csrc.nist.gov/projects/circuit-complexity">https://csrc.nist.gov/projects/circuit-complexity</a></div>
+</div>
+<div id="ref-nistCircuitList" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[2] </div><div
+class="csl-right-inline">National Institute of Standards and Technology,
+<span>“Circuit complexity: List of circuits.”</span> Accessed: Jul. 12,
+2026. [Online]. Available: <a
+href="https://csrc.nist.gov/projects/circuit-complexity/list-of-circuits">https://csrc.nist.gov/projects/circuit-complexity/list-of-circuits</a></div>
+</div>
+<div id="ref-nistAES32SLP" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[3] </div><div
+class="csl-right-inline">National Institute of Standards and Technology,
+<span>“Aes-sbox-fwd-g113-a32-d27-ad6.slp: Official forward AES s-box
+straight-line program in the usnistgov/circuits repository.”</span>
+Accessed: Jul. 12, 2026. [Online]. Available: <a
+href="https://github.com/usnistgov/Circuits/blob/master/data/slp/aes/aes-sbox-fwd-g113-a32-d27-ad6.slp">https://github.com/usnistgov/Circuits/blob/master/data/slp/aes/aes-sbox-fwd-g113-a32-d27-ad6.slp</a></div>
+</div>
+<div id="ref-fips197" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[4] </div><div
+class="csl-right-inline">National Institute of Standards and Technology,
+<span>“Advanced encryption standard (AES),”</span> National Institute of
+Standards; Technology, Federal Information Processing Standards
+Publication 197-upd1, May 2023. Accessed: Jul. 12, 2026. [Online].
+Available: <a
+href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf">https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf</a></div>
+</div>
+<div id="ref-boyarMatthewsPeralta2013" class="csl-entry"
+role="listitem">
+<div class="csl-left-margin">[5] </div><div class="csl-right-inline">J.
+Boyar, P. Matthews, and R. Peralta, <span>“Logic minimization techniques
+with applications to cryptology,”</span> <em>Journal of Cryptology</em>,
+vol. 26, no. 2, pp. 280–312, 2013.</div>
+</div>
+</div>
+    </article>
+    <footer class="paper-footer">
+      <p>The PDF and this HTML document are generated from the same canonical TeX source.</p>
+    </footer>
+  </main>
+</body>
+</html>

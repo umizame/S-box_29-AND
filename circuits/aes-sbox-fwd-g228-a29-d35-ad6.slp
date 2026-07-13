@@ -3,12 +3,11 @@
 # Tally: 8 inputs, 8 outputs, 228 gates, 29 AND, 195 XOR, 4 NOT
 # Depth(Gate): 35; Depth(AND): 6
 
-begin circuit AES-SBOX-FWD-A29
+begin circuit AES-SBOX-FWD-A29-OPT
 Inputs: U0:U7
 Outputs: S0:S7
 Internal: t1:t220
 GateSyntax: GateName Output Inputs
-
 begin SLP
 XOR t1 U3 U5
 XOR t2 U0 U6
@@ -239,5 +238,4 @@ XOR t219 t218 t118
 XOR t220 t219 t121
 NOT S7 t220
 end SLP
-
 end circuit

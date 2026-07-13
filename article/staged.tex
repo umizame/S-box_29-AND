@@ -1,0 +1,87 @@
+\subsection{Input-linear coordinates}
+The input bits are ordered $(U_0,\ldots,U_7)$, with $U_0$ the most significant bit.
+\begin{longtable}{@{}rcl@{}}
+\caption{The eight pre-middle coordinates as linear forms in $(U_0,\ldots,U_7)$.}\label{tab:coordinates}\\
+\toprule
+coordinate & mask & linear form \\
+\midrule\endfirsthead
+\toprule
+coordinate & mask & linear form \\
+\midrule\endhead
+\bottomrule\endfoot
+$L_0$ & \texttt{69} & $U_0\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6$ \\
+$L_1$ & \texttt{e7} & $U_0\mathbin{\oplus}\allowbreak U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7$ \\
+$L_2$ & \texttt{41} & $U_0\mathbin{\oplus}\allowbreak U_6$ \\
+$L_3$ & \texttt{c6} & $U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7$ \\
+$R_0$ & \texttt{59} & $U_0\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_6$ \\
+$R_1$ & \texttt{d9} & $U_0\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7$ \\
+$R_2$ & \texttt{74} & $U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6$ \\
+$R_3$ & \texttt{86} & $U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_7$ \\
+\end{longtable}
+
+\subsection{Five retained middle products}
+For this table the mask basis is
+\[
+(1,U_0,\ldots,U_7,P_{01},P_{02},P_{03},P_{09},P_{10},P_{11},P_{17},P_{18},P_{19},M_1,\ldots,M_5).
+\]
+A row defining $M_k$ has zero coefficients on $M_k,\ldots,M_5$; hence both factors are available before $M_k$ is formed.
+\begingroup\small
+\begin{longtable}{@{}r>{\raggedright\arraybackslash}p{0.41\textwidth}>{\raggedright\arraybackslash}p{0.41\textwidth}@{}}
+\caption{Exact affine factors of the five middle AND gates.}\label{tab:middle-factors}\\
+\toprule
+gate & first factor & second factor \\
+\midrule\endfirsthead
+\toprule
+gate & first factor & second factor \\
+\midrule\endhead
+\bottomrule\endfoot
+$M_1$ & $\ell_{\mathtt{1ecf6}}=U_0\mathbin{\oplus}\allowbreak U_1\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{18}$ & $\ell_{\mathtt{1d06a}}=U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{18}$ \\
+$M_2$ & $\ell_{\mathtt{2b60a}}=U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{19}$ & $\ell_{\mathtt{730ea}}=U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_1$ \\
+$M_3$ & $\ell_{\mathtt{75afc}}=U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_1$ & $\ell_{\mathtt{2e080}}=U_6\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{19}$ \\
+$M_4$ & $\ell_{\mathtt{330ea}}=U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak P_{19}$ & $\ell_{\mathtt{140000}}=M_1\mathbin{\oplus}\allowbreak M_3$ \\
+$M_5$ & $\ell_{\mathtt{b5afc}}=U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_2$ & $\ell_{\mathtt{2730ea}}=U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_1\mathbin{\oplus}\allowbreak M_4$ \\
+\end{longtable}
+\endgroup
+
+\subsection{Post-middle coordinates}
+\begin{longtable}{@{}rc>{\raggedright\arraybackslash}p{0.72\textwidth}@{}}
+\caption{The four post-middle coordinates in the same 23-element affine basis.}\label{tab:post-coordinates}\\
+\toprule
+coordinate & mask & affine expression \\
+\midrule\endfirsthead
+\toprule
+coordinate & mask & affine expression \\
+\midrule\endhead
+\bottomrule\endfoot
+$Z_0$ & \texttt{21d06a} & $U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak M_4$ \\
+$Z_1$ & \texttt{32e080} & $U_6\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4$ \\
+$Z_2$ & \texttt{49ecf6} & $U_0\mathbin{\oplus}\allowbreak U_1\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak M_5$ \\
+$Z_3$ & \texttt{42b60a} & $U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_5$ \\
+\end{longtable}
+
+\subsection{Output reconstruction}
+For the output rows, append the late products in the order
+\[
+(P_{04},P_{05},P_{06},P_{07},P_{08},P_{12},P_{13},P_{14},P_{15},P_{16},P_{20},P_{21},P_{22},P_{23},P_{24})
+\]
+to the 23-element middle basis.
+\begingroup\small
+\begin{longtable}{@{}rc>{\raggedright\arraybackslash}p{0.72\textwidth}@{}}
+\caption{Exact affine reconstruction of the eight output bits.}\label{tab:output-reconstruction}\\
+\toprule
+output & mask & affine expression \\
+\midrule\endfirsthead
+\toprule
+output & mask & affine expression \\
+\midrule\endhead
+\bottomrule\endfoot
+$S_0$ & \texttt{2491ba35ce} & $U_0\mathbin{\oplus}\allowbreak U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak P_{04}\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak P_{21}\mathbin{\oplus}\allowbreak P_{24}$ \\
+$S_1$ & \texttt{257bba3b95} & $1\mathbin{\oplus}\allowbreak U_1\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak P_{04}\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak P_{06}\mathbin{\oplus}\allowbreak P_{08}\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak P_{14}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak P_{21}\mathbin{\oplus}\allowbreak P_{24}$ \\
+$S_2$ & \texttt{2e6532ee01} & $1\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak P_{07}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak P_{14}\mathbin{\oplus}\allowbreak P_{20}\mathbin{\oplus}\allowbreak P_{21}\mathbin{\oplus}\allowbreak P_{22}\mathbin{\oplus}\allowbreak P_{24}$ \\
+$S_3$ & \texttt{19dbba4b98} & $U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak P_{04}\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak P_{06}\mathbin{\oplus}\allowbreak P_{08}\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak P_{14}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak P_{22}\mathbin{\oplus}\allowbreak P_{23}$ \\
+$S_4$ & \texttt{189eba357c} & $U_1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{09}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak P_{04}\mathbin{\oplus}\allowbreak P_{06}\mathbin{\oplus}\allowbreak P_{07}\mathbin{\oplus}\allowbreak P_{08}\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak P_{22}\mathbin{\oplus}\allowbreak P_{23}$ \\
+$S_5$ & \texttt{0c0332e152} & $U_0\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{11}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_3\mathbin{\oplus}\allowbreak M_4\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak P_{06}\mathbin{\oplus}\allowbreak P_{21}\mathbin{\oplus}\allowbreak P_{22}$ \\
+$S_6$ & \texttt{0db00b2bf9} & $1\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_3\mathbin{\oplus}\allowbreak U_4\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak U_6\mathbin{\oplus}\allowbreak U_7\mathbin{\oplus}\allowbreak P_{01}\mathbin{\oplus}\allowbreak P_{03}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{18}\mathbin{\oplus}\allowbreak P_{19}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak P_{21}\mathbin{\oplus}\allowbreak P_{22}$ \\
+$S_7$ & \texttt{19b508a44b} & $1\mathbin{\oplus}\allowbreak U_0\mathbin{\oplus}\allowbreak U_2\mathbin{\oplus}\allowbreak U_5\mathbin{\oplus}\allowbreak P_{02}\mathbin{\oplus}\allowbreak P_{10}\mathbin{\oplus}\allowbreak P_{17}\mathbin{\oplus}\allowbreak M_2\mathbin{\oplus}\allowbreak P_{05}\mathbin{\oplus}\allowbreak P_{07}\mathbin{\oplus}\allowbreak P_{12}\mathbin{\oplus}\allowbreak P_{13}\mathbin{\oplus}\allowbreak P_{15}\mathbin{\oplus}\allowbreak P_{16}\mathbin{\oplus}\allowbreak P_{22}\mathbin{\oplus}\allowbreak P_{23}$ \\
+\end{longtable}
+\endgroup

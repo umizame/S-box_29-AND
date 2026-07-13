@@ -1,0 +1,676 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=27mm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{aliascnt}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{xurl}
+\usepackage{seqsplit}
+\usepackage{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage[backend=biber,style=numeric,sorting=none,maxbibnames=20]{biblatex}
+\addbibresource{references.bib}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!45!black,
+  citecolor=blue!45!black,
+  urlcolor=blue!55!black,
+  pdftitle={A 29-AND Circuit for the AES S-box},
+  pdfauthor={{GPT-5.6 Pro, umizame} (unordered)},
+  pdfsubject={A constructive upper bound on the multiplicative complexity of the AES S-box}
+}
+
+\definecolor{codebg}{RGB}{247,247,247}
+\definecolor{codeframe}{RGB}{205,205,205}
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=0.8em,
+  belowskip=0.8em
+}
+
+\newtheorem{theorem}{Theorem}
+\newaliascnt{proposition}{theorem}
+\newtheorem{proposition}[proposition]{Proposition}
+\aliascntresetthe{proposition}
+\newaliascnt{lemma}{theorem}
+\newtheorem{lemma}[lemma]{Lemma}
+\aliascntresetthe{lemma}
+\newaliascnt{corollary}{theorem}
+\newtheorem{corollary}[corollary]{Corollary}
+\aliascntresetthe{corollary}
+\theoremstyle{definition}
+\newaliascnt{definition}{theorem}
+\newtheorem{definition}[definition]{Definition}
+\aliascntresetthe{definition}
+\newaliascnt{remark}{theorem}
+\newtheorem{remark}[remark]{Remark}
+\aliascntresetthe{remark}
+
+\newcommand{\F}{\mathbb F}
+\newcommand{\AES}{\operatorname{AES\mbox{-}Sbox}}
+\newcommand{\MC}{\operatorname{MC}}
+\newcommand{\Span}{\operatorname{span}}
+\newcommand{\sig}{\operatorname{sig}}
+\newcommand{\mask}[2]{\left\langle #1\right\rangle_{#2}}
+\newcommand{\primaryhash}{\nolinkurl{f41861c4b15bc78840708a5da2fab6ca9dd204c1e3e572cae49912c713bf18d3}}
+\newcommand{\transparenthash}{\nolinkurl{cecd0c7abba9920ff2af7ec204fcd01f97db135a4c43d8afd7f83d65c2e382ca}}
+\newcommand{\xaghash}{\nolinkurl{862446d12293b21bfafbd7e958502301619a596e6bf3cb7a3b22f3f830926264}}
+\newcommand{\towerhash}{\nolinkurl{1e847a85e3abe783d98e3d4c48a7d9eb845caab96903c175657cce06119c6925}}
+\newcommand{\stagedhash}{\nolinkurl{d72ca4cd9617b365587a3b826ab3a0d37489187cdd67fca18ff50b1d3d5e0083}}
+\newcommand{\baselinehash}{\nolinkurl{6ba4f63b832a1f4520a76cab5680e673fdd744ad2651918882eeecff7957698a}}
+
+\title{\bfseries A 29-AND Circuit for the AES S-box}
+\author{\textbf{Authors (unordered):} \{GPT-5.6 Pro, \href{https://github.com/umizame}{umizame}\}}
+\date{12 July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The NIST Circuit Complexity project defines multiplicative complexity in a one-bit Boolean-circuit
+model and lists a forward AES S-box circuit with 32 AND gates.  We give a completely explicit
+construction with 29 AND gates.  The construction is specified by eight input-linear coordinates,
+24 products of linear forms, five intervening products whose factors are given recursively, four
+post-middle coordinates, and eight affine output expressions.  Nine of the 24 outer products are
+available before the five middle products and fifteen are available afterward, giving the legal
+nonlinear schedule
+\[
+  9+5+15=29.
+\]
+The complete formulas and the complete 256-entry evaluation table are included.  The latter agrees
+entry by entry with the forward S-box in FIPS 197.  Hence the construction proves
+\(
+  \MC(\AES)\leq 29.
+\)
+A concrete straight-line implementation has 29 AND, 195 XOR, and 4 NOT instructions, ordinary gate
+depth 35, and AND-depth 6.  Independent verifiers check the staged formulas, the FIPS algebraic
+definition and table, the implementation grammar and dependencies, a normalized XOR--AND graph,
+the derivation from the official 32-AND NIST program, and deterministic reconstruction.  The result
+is an upper bound only; no minimality claim is made.
+\end{abstract}
+
+\tableofcontents
+\bigskip
+
+\section{Problem statement and exact conventions}
+\label{sec:problem}
+
+\subsection{NIST circuit model and multiplicative complexity}
+
+NIST defines the multiplicative size of a Boolean circuit as the number of its nonlinear gates and
+the multiplicative complexity of a Boolean or vectorial Boolean function as the minimum
+multiplicative size among circuits computing it.  The NIST circuit collection uses the one-bit basis
+\(\{\mathrm{AND},\mathrm{XOR},\mathrm{NOT}\}\) for this problem
+\cite{nistCircuitComplexity}.  Over \(\F_2\), XOR and NOT are affine and AND is nonlinear; therefore
+multiplicative size in this basis is exactly the number of AND gates.
+
+For the forward AES S-box, NIST lists a circuit with 32 AND gates and 81 XOR/XNOR gates, 113 gates in
+total, ordinary depth 27, and AND-depth 6 \cite{nistCircuitList}.  The corresponding official
+straight-line program contains 32 AND, 77 XOR, and 4 XNOR instructions
+\cite{nistAES32SLP}.  NIST asks whether fewer than 32 nonlinear gates suffice
+\cite{nistCircuitComplexity}.  The theorem proved below supplies a 29-AND upper bound.
+
+\begin{definition}[Circuit model]
+\label{def:circuit-model}
+A circuit in this paper has eight input bits, arbitrary fan-out, and one-bit gates of the forms
+\[
+ a\oplus b,\qquad a\wedge b,\qquad 1\oplus a.
+\]
+Every gate input must be either an external input or the output of an earlier gate.  The
+multiplicative size is the number of \(\wedge\)-gates.  The multiplicative complexity
+\(\MC(F)\) is the minimum multiplicative size over all such circuits computing \(F\).
+\end{definition}
+
+\subsection{The FIPS 197 function}
+
+Write an external byte as
+\[
+  x=(U_0U_1\cdots U_7)_2=\sum_{j=0}^{7}U_j2^{7-j},
+\]
+so \(U_0\) is the most significant bit.  For the polynomial representation, write instead
+\(x=\sum_{i=0}^{7}b_i2^i\) and associate the polynomial
+\(\sum_{i=0}^{7}b_iX^i\).  FIPS 197 defines the forward S-box by inversion in
+\begin{equation}
+ \F_2[X]/(X^8+X^4+X^3+X+1),
+ \label{eq:aes-field}
+\end{equation}
+with zero mapped to zero, followed by an affine map with constant byte \texttt{63}
+\cite{fips197}.  If \(y_i\) are the least-significant-bit-first coefficients of the inverse, then
+\begin{equation}
+ s_i=y_i\oplus y_{i+4}\oplus y_{i+5}\oplus y_{i+6}\oplus y_{i+7}\oplus c_i,
+ \qquad c=\texttt{63},
+ \label{eq:fips-affine}
+\end{equation}
+where subscripts are reduced modulo 8.  The external output notation is
+\(\AES(x)=(S_0S_1\cdots S_7)_2\), with \(S_0=s_7\) and \(S_7=s_0\).
+FIPS 197 also prints all 256 output bytes in its S-box table.  Both descriptions are checked
+independently in the verification described below.
+
+\subsection{Hexadecimal mask notation}
+
+\begin{definition}[Affine masks]
+\label{def:masks}
+For an ordered tuple of bits \(B=(b_0,\ldots,b_{r-1})\) and an integer
+\(m=\sum_{j=0}^{r-1}m_j2^j\), define
+\begin{equation}
+  \mask{m}{B}=\bigoplus_{j:m_j=1}b_j.
+  \label{eq:mask}
+\end{equation}
+Masks are printed in hexadecimal.  Thus the least significant bit of the \emph{mask} selects the
+first member of the declared tuple; this convention is independent of whether a byte bit is most or
+least significant.
+\end{definition}
+
+For example, with \(B_U=(U_0,\ldots,U_7)\),
+\[
+ \mask{\mathtt{69}}{B_U}=U_0\oplus U_3\oplus U_5\oplus U_6.
+\]
+This convention makes every formula below unambiguous and directly machine-checkable.
+
+\section{The explicit staged 29-AND construction}
+\label{sec:construction}
+
+This section defines a Boolean map \(C_{29}:\F_2^8\to\F_2^8\) without reference to any previous
+circuit.  Every affine expression is specified by a mask, and every nonlinear operation is displayed
+as one product of two affine expressions.
+
+\subsection{Input-linear coordinates and the 24 outer products}
+
+Let
+\[
+ B_U=(U_0,U_1,\ldots,U_7).
+\]
+Define \(L_0,\ldots,L_3,R_0,\ldots,R_3\) by the eight masks in
+\cref{tab:coordinates}.  These are linear functions of the input and require no AND gate.
+
+Eventually there will also be four bits \(Z_0,\ldots,Z_3\).  Put
+\begin{equation}
+ B_C=(L_0,L_1,L_2,L_3,R_0,R_1,R_2,R_3,Z_0,Z_1,Z_2,Z_3).
+ \label{eq:coordinate-basis}
+\end{equation}
+For each row \((u_j,v_j)\) of \cref{tab:products}, define
+\begin{equation}
+  P_j=\mask{u_j}{B_C}\wedge\mask{v_j}{B_C}.
+  \label{eq:outer-products}
+\end{equation}
+The nine products
+\begin{equation}
+ E=(P_{01},P_{02},P_{03},P_{09},P_{10},P_{11},P_{17},P_{18},P_{19})
+ \label{eq:early-products}
+\end{equation}
+have zero coefficients on all four \(Z\)-coordinates, as is visible directly from their factor
+masks.  They can therefore be computed immediately after \(L\) and \(R\).  The other fifteen
+products are deferred until \(Z\) has been defined.
+
+\subsection{Five recursively available middle products}
+
+Use the padded ordered tuple
+\begin{equation}
+ B_M=(1,U_0,\ldots,U_7,E,M_1,M_2,M_3,M_4,M_5).
+ \label{eq:middle-basis}
+\end{equation}
+For \(k=1,\ldots,5\), the row for \(M_k\) in \cref{tab:middle-factors} contains two masks
+\(a_k,b_k\).  Define recursively
+\begin{equation}
+  M_k=\mask{a_k}{B_M}\wedge\mask{b_k}{B_M}.
+  \label{eq:middle-products}
+\end{equation}
+Every coefficient on \(M_k,M_{k+1},\ldots,M_5\) is zero in that row.  Consequently the right side of
+\cref{eq:middle-products} uses only the constant, inputs, the nine already-computed products in
+\(E\), and earlier middle values \(M_1,\ldots,M_{k-1}\).  The recursion is therefore a legal
+straight-line schedule rather than a simultaneous or circular definition.
+
+\subsection{Post-middle coordinates, late products, and outputs}
+
+After \(M_5\) has been computed, define \(Z_0,\ldots,Z_3\) by the four masks in
+\cref{tab:post-coordinates}, all interpreted in \(B_M\).  The full coordinate tuple \(B_C\) in
+\cref{eq:coordinate-basis} is then available, so the remaining fifteen rows of
+\cref{tab:products} define the late products
+\begin{equation}
+ D=(P_{04},P_{05},P_{06},P_{07},P_{08},P_{12},P_{13},P_{14},P_{15},P_{16},
+ P_{20},P_{21},P_{22},P_{23},P_{24}).
+ \label{eq:late-products}
+\end{equation}
+Finally set
+\[
+ B_O=(B_M,D)
+\]
+and define \(S_0,\ldots,S_7\) by the eight masks in
+\cref{tab:output-reconstruction}, interpreted in \(B_O\).
+
+\begin{lemma}[Availability and nonlinear count]
+\label{lem:availability}
+The construction above is an acyclic circuit in the model of \cref{def:circuit-model}.  It contains
+exactly 29 AND gates, with schedule \(9+5+15\).
+\end{lemma}
+
+\begin{proof}
+The eight \(L,R\) coordinates are linear in the inputs.  By inspection of the nine masks listed in
+\cref{eq:early-products}, their factors involve only \(L,R\), so those nine products are available
+first.  In the row defining \(M_k\), all mask bits belonging to \(M_k\) and later middle values are
+zero; induction on \(k\) therefore proves that each of the five middle products is available when it
+is formed.  The four \(Z\)-coordinates are affine in values then available.  This makes every factor
+of the fifteen late products available.  The outputs are affine combinations of already-computed
+values.  No affine step contributes an AND gate.  The only nonlinear operations are the nine early
+products, five middle products, and fifteen late products, totaling \(9+5+15=29\).
+\end{proof}
+
+\section{Correctness and the multiplicative-complexity bound}
+\label{sec:correctness}
+
+The construction has only eight inputs, so functional correctness can be certified without sampling
+or an unproved algebraic identification: evaluate all \(2^8=256\) inputs.  \cref{app:finite} gives the complete output table obtained from the recursion in
+\cref{eq:outer-products,eq:middle-products}.  Row \(r\) and column \(c\) contain the output for input
+byte \(\mathtt{rc}\).  It is entrywise identical to FIPS 197, Table 4.
+
+\begin{lemma}[Finite-domain equality]
+\label{lem:finite-domain}
+Let \(F,G:\F_2^8\to\F_2^8\).  If \(F(x)=G(x)\) for every one of the 256 input bytes, then
+\(F=G\).
+\end{lemma}
+
+\begin{proof}
+The 256 bytes are exactly all elements of \(\F_2^8\).  Pointwise equality on this complete domain is
+the definition of equality of the two functions.
+\end{proof}
+
+\begin{theorem}[Constructive 29-AND upper bound]
+\label{thm:main}
+For the forward AES S-box specified by FIPS 197, in the circuit model of
+\cref{def:circuit-model},
+\[
+  \MC(\AES)\leq 29.
+\]
+\end{theorem}
+
+\begin{proof}
+By \cref{lem:availability}, \(C_{29}\) is a legal circuit with exactly 29 AND gates.  Direct recursive
+evaluation of its displayed formulas gives \cref{tab:evaluation}.  The same table is the complete
+FIPS 197 forward S-box table.  Therefore \(C_{29}(x)=\AES(x)\) for every input byte; by
+\cref{lem:finite-domain}, \(C_{29}=\AES\).  Since multiplicative complexity is the minimum AND count
+over all circuits computing the function, the existence of this circuit gives
+\(\MC(\AES)\leq29\).
+\end{proof}
+
+The table is not the only correctness check.  The standalone verifier reproduced in
+\cref{app:artifacts} first checks the literal 256-byte FIPS table against the field inversion and
+affine map in \cref{eq:aes-field,eq:fips-affine}; it then parses and exhaustively evaluates the
+released straight-line implementation.  A separate staged verifier interprets precisely the mask
+bases and recursions in this paper, enforces every availability restriction, and again compares all
+256 values with FIPS.  Thus the field definition, printed table, staged construction, and compiled
+straight-line program are pairwise connected by explicit finite checks.
+
+\begin{corollary}[Concrete straight-line implementation]
+\label{cor:slp}
+There is a straight-line implementation of \(C_{29}\) containing
+\[
+ 29\ \mathrm{AND}+195\ \mathrm{XOR}+4\ \mathrm{NOT}=228
+\]
+instructions.  Its ordinary gate depth is 35 and its AND-depth is 6.
+\end{corollary}
+
+\begin{proof}
+The strict parser listed in \cref{app:artifacts} accepts only the declared one-bit grammar, verifies
+that every operand is previously defined, prohibits wire redefinition, requires all declared
+temporaries and outputs, and counts the accepted instructions.  It obtains the stated tally.  Giving
+inputs depth zero and assigning each gate one plus the maximum operand depth yields output depth 35.
+For AND-depth, the same recurrence adds one only at an AND gate and obtains 6.  Because the verified
+program order is acyclic, these recurrences equal the corresponding longest-path definitions.  The
+same parser exhaustively verifies the implementation output against FIPS on all 256 inputs.
+\end{proof}
+
+\section{Independent derivation from the official NIST circuit}
+\label{sec:baseline}
+
+The proof of \cref{thm:main} is already complete and does not assume the correctness of another
+circuit.  This section records how the construction was obtained and supplies a second, structurally
+different audit.
+
+The official NIST 32-AND SLP numbers its nonlinear outputs in program order.  The first nine are
+\[
+ t24,t25,t27,t29,t30,t32,t34,t35,t37,
+\]
+the next five are
+\[
+ t48,t50,t54,t58,t61,
+\]
+and the last eighteen are \(t68,t69,\ldots,t85\).  Hence its nonlinear schedule is
+\(9+5+18\).  The SLP states that it is based on the low-multiplicative-complexity AES construction of
+Boyar, Matthews, and Peralta, with an affine-layer improvement
+\cite{nistAES32SLP,boyarMatthewsPeralta2013}.
+
+The following coordinate vectors are exact named-wire identities in that SLP:
+\begin{equation}
+\begin{aligned}
+ L&=(t8,t11,t2,t10),\\
+ R&=(t13,t15,t21,t6),\\
+ Z&=(t66,t59,t65,t62).
+\end{aligned}
+\label{eq:LRZ}
+\end{equation}
+The first two are available before any AND gate and equal the input-linear forms printed in
+\cref{tab:coordinates}.  The vector \(Z\) is available after the five middle AND gates.  The new
+construction retains those five middle functions, replaces the 27 outer products by the 24 products
+of \cref{tab:products}, and supplies explicit affine reconstruction masks for every retained factor,
+every \(Z_i\), and every output.  The exact masks, rather than an assertion of span membership, are
+printed in \cref{tab:middle-factors,tab:post-coordinates,tab:output-reconstruction}.
+
+For an additional symbolic audit, every NIST wire is processed as an affine expression over the
+constant, the eight inputs, and 32 independent symbols representing the successive NIST AND outputs.
+XOR, XNOR, and NOT update this expression exactly; encountering an AND introduces the next independent
+symbol.  This syntactic calculation does not assume a truth-table identity between unrelated wires.
+It proves the coordinate identities in \cref{eq:LRZ}, the factor-coordinate forms of all 27 outer
+AND gates, and the exact coefficient vectors by which outer AND outputs enter the ten middle factors
+and eight final outputs.
+
+The remaining part of that symbolic bridge is described in \cref{sec:formal}.  Its role is
+provenance and redundancy: the direct staged formulas and complete FIPS evaluation remain sufficient
+for the theorem even if the NIST derivation is ignored.
+
+\section{An eight-product identity over \texorpdfstring{\(\F_4\)}{F4}}
+\label{sec:gf4}
+
+The 24 outer products have a compact algebraic organization.  Let
+\[
+ K=\F_4=\F_2[\omega]/(\omega^2+\omega+1)
+\]
+and write \(x=x_0\omega+x_1\), \(y=y_0\omega+y_1\), and
+\(z=z_0\omega+z_1\).  Define
+\begin{align}
+ p_1&=x_0y_0, &
+ p_2&=x_1y_1, &
+ p_3&=(x_0\oplus x_1)(y_0\oplus y_1),
+ \label{eq:p123}\\
+ p_4&=(x_0\oplus y_0\oplus y_1\oplus z_1)(x_1\oplus y_0\oplus z_0),\nonumber\\
+ p_5&=(x_1\oplus y_0\oplus y_1\oplus z_1)(x_0\oplus x_1\oplus y_0\oplus z_0),\nonumber\\
+ p_6&=(x_1\oplus y_0\oplus y_1\oplus z_0\oplus z_1)(x_0\oplus y_1\oplus z_0),\nonumber\\
+ p_7&=(x_1\oplus y_0\oplus z_1)(x_0\oplus x_1\oplus y_1\oplus z_0),\nonumber\\
+ p_8&=(x_1\oplus y_0\oplus z_0\oplus z_1)(x_0\oplus y_0\oplus y_1\oplus z_0).
+ \label{eq:p45678}
+\end{align}
+Then define six affine reconstructions by
+\begin{align}
+ (xy)_0&=p_2\oplus p_3, &
+ (xy)_1&=p_1\oplus p_2,
+ \label{eq:xy}\\
+ (yz)_0&=y_0\oplus y_1\oplus p_1\oplus p_2\oplus p_3\oplus p_6\oplus p_8,\nonumber\\
+ (yz)_1&=y_1\oplus p_5\oplus p_6\oplus p_7\oplus p_8,
+ \label{eq:yz}\\
+ (zx)_0&=x_1\oplus p_1\oplus p_2\oplus p_3\oplus p_4\oplus p_5,\nonumber\\
+ (zx)_1&=x_1\oplus y_1\oplus z_0\oplus p_1\oplus p_2\oplus p_3\oplus p_6\oplus p_7.
+ \label{eq:zx}
+\end{align}
+Here \((ab)_0\omega+(ab)_1\) denotes the displayed pair of reconstructed bits.
+
+\begin{proposition}[Filtered \(\F_4\) triangle identity]
+\label{prop:gf4}
+For every \((x,y,z)\in K^3\), the quantities in
+\cref{eq:xy,eq:yz,eq:zx} are exactly the coordinates of \(xy,yz,zx\).  Products
+\(p_1,p_2,p_3\) use only \(x,y\), while \(p_4,\ldots,p_8\) may use \(z\).
+\end{proposition}
+
+\begin{proof}
+Since \(\omega^2=\omega+1\),
+\begin{equation}
+ (a_0\omega+a_1)(b_0\omega+b_1)
+ =(a_0b_0\oplus a_0b_1\oplus a_1b_0)\omega
+  \oplus(a_0b_0\oplus a_1b_1).
+ \label{eq:gf4mul}
+\end{equation}
+Expand the right sides of \cref{eq:xy,eq:yz,eq:zx}, substitute
+\cref{eq:p123,eq:p45678}, and cancel repeated monomials over \(\F_2\).  The six resulting algebraic
+normal forms are
+\begin{align*}
+ (xy)_0&=x_0y_0\oplus x_0y_1\oplus x_1y_0,
+ & (xy)_1&=x_0y_0\oplus x_1y_1,\\
+ (yz)_0&=y_0z_0\oplus y_0z_1\oplus y_1z_0,
+ & (yz)_1&=y_0z_0\oplus y_1z_1,\\
+ (zx)_0&=z_0x_0\oplus z_0x_1\oplus z_1x_0,
+ & (zx)_1&=z_0x_0\oplus z_1x_1.
+\end{align*}
+These are precisely the two coordinates in \cref{eq:gf4mul}.  The availability statement follows
+directly from the eight factor formulas.
+\end{proof}
+
+To obtain the 24 rows in \cref{tab:products}, first apply the invertible binary transform
+\begin{equation}
+ \Phi(a_0,a_1,a_2,a_3)=
+ \bigl((a_2\oplus a_3)\omega+a_3,\ a_1\omega+a_0\bigr).
+ \label{eq:Phi}
+\end{equation}
+Its four binary row masks are \(\mathtt c,\mathtt8,\mathtt2,\mathtt1\); the compact tag
+\(\mathtt{128c}\) records them from high to low hexadecimal digit.  Invertibility is immediate from
+\[
+ a_3=q_1,\qquad a_2=q_0\oplus q_1,\qquad a_1=q_2,\qquad a_0=q_3,
+\]
+where \((q_0,q_1,q_2,q_3)=(a_2\oplus a_3,a_3,a_1,a_0)\).
+
+Apply \cref{prop:gf4} three times: to the first components of
+\(\Phi(L),\Phi(R),\Phi(Z)\), to their second components, and to the componentwise sums of those two
+triples.  This produces three blocks of eight products.  In each block, three products are early and
+five are late, so the total filtration is nine early and fifteen late.  This observation explains the
+factor pattern in \cref{tab:products}.  It is not an assumption that a particular field structure on
+four-bit vectors matches the NIST circuit: the exact relation to the required NIST functions is
+checked by the explicit reconstruction masks and the formal bridge below.
+
+\section{Formal quadratic bridge}
+\label{sec:formal}
+
+The following calculation independently checks why the 24 factor pairs can replace the outer portion
+of the 32-AND NIST construction.
+
+Let \(V=\F_2^{12}\) with ordered coordinates \(B_C\) from
+\cref{eq:coordinate-basis}.  For \(u\in V\), let \(\ell_u=\mask{u}{B_C}\), now treating the twelve
+coordinates as independent Boolean indeterminates.
+
+\begin{lemma}[Product signature and diagonal correction]
+\label{lem:wedge}
+In the Boolean polynomial ring with \(X_i^2=X_i\),
+\begin{equation}
+ \ell_u(X)\ell_v(X)=
+ \bigoplus_{i<j}(u_iv_j\oplus u_jv_i)X_iX_j
+ \oplus\bigoplus_i u_iv_iX_i.
+ \label{eq:wedge}
+\end{equation}
+Thus the off-diagonal quadratic signature is the decomposable two-form
+\(u\wedge v\in\Lambda^2V\), while the diagonal linear correction has mask
+\(u\mathbin{\&}v\).
+\end{lemma}
+
+\begin{proof}
+Expand the product.  For \(i<j\), the coefficient of \(X_iX_j\) is the XOR of the two ordered
+contributions \(u_iv_j\) and \(u_jv_i\).  The diagonal contribution is
+\(u_iv_iX_i^2=u_iv_iX_i\).  Grouping the terms gives \cref{eq:wedge}.
+\end{proof}
+
+Encode \(u\wedge v\) in the lexicographically ordered pair basis
+\[
+ (0,1),(0,2),\ldots,(0,11),(1,2),\ldots,(10,11).
+\]
+A symbolic pass through the NIST SLP gives 27 linearly independent signatures for its nine early and
+18 late outer AND outputs.  Projecting the ten middle-factor expressions and eight output expressions
+onto those 27 outer symbols, and then mapping through the corresponding signatures, gives an ordered
+four-dimensional pre-middle space \(Q_{\mathrm{pre}}\) and an ordered twelve-dimensional total space
+\(Q\), with
+\[
+ Q_{\mathrm{pre}}\subset Q\subset\Lambda^2V,
+ \qquad \dim Q_{\mathrm{pre}}=4,
+ \qquad \dim Q=12.
+\]
+The twelve target signatures and the 24-bit product-selection masks are printed in
+\cref{tab:targets}; the first four selection masks use only the nine early products.
+
+\begin{proposition}[Exact formal reconstruction]
+\label{prop:formal-certificate}
+For every row of \cref{tab:targets}, the selected products from \cref{tab:products}, together with
+the diagonal correction prescribed by \cref{lem:wedge}, equal the indicated quadratic polynomial on
+all \(2^{12}=4096\) assignments of the formal coordinates.  The first four identities use no late
+product.
+\end{proposition}
+
+\begin{proof}
+For a selection set \(J\), compute
+\[
+ d=\bigoplus_{j\in J}(u_j\wedge v_j),
+ \qquad
+ r=\bigoplus_{j\in J}(u_j\mathbin{\&}v_j).
+\]
+The stored selection mask is checked to give exactly the target signature \(d\).  Applying
+\cref{lem:wedge} term by term then gives the polynomial identity
+\[
+ q(X)=\bigoplus_{j\in J}\ell_{u_j}(X)\ell_{v_j}(X)\oplus\ell_r(X).
+\]
+This coefficient argument proves the identity.  As a redundant check of coordinate and bit ordering,
+both sides are also evaluated on all 4096 assignments.  Inspection of the first four selection masks
+shows that their set bits occur only at the nine early product positions.
+\end{proof}
+
+The formal calculation concerns the quadratic outer contribution.  The full affine corrections,
+constant terms, recursive middle dependencies, post-middle coordinates, and output expressions are
+not left implicit: they are the explicit staged masks in \cref{tab:middle-factors,tab:post-coordinates,tab:output-reconstruction}.
+Their exhaustive eight-input evaluation is the direct correctness proof used in
+\cref{thm:main}.
+
+\section{Verification separation}
+\label{sec:verification}
+
+The result is checked through independent representations so that a defect in one representation is
+unlikely to be silently inherited by all others.
+
+\begin{enumerate}[leftmargin=2.4em]
+\item The staged-certificate checker parses the 24 factor pairs and all affine masks, enforces the
+nine-before-five-before-fifteen availability filtration, and evaluates all 256 inputs against a
+literal FIPS table.
+\item The direct straight-line checker strictly parses declarations, delimiters, gate arities,
+dependencies, and wire names; it recomputes the exact tally and both depths, independently derives the
+FIPS S-box by finite-field arithmetic, checks that derivation against the literal table, and evaluates
+the circuit on all inputs.
+\item A bit-parallel evaluator represents every wire by its complete 256-bit truth table.  A separate
+C99 parser and evaluator repeats the finite circuit test.
+\item Both straight-line implementations are normalized by absorbing every affine operation into
+masks over the constant, inputs, and preceding AND outputs.  Their 29 ordered factor pairs and eight
+output masks agree exactly with the printed XOR--AND graph certificate.
+\item The NIST bridge derives its target from the official 32-AND SLP rather than accepting a target
+from the 24-product witness; it verifies the formal identities on all 4096 coordinate assignments and
+the actual staged realization on all 256 AES inputs.
+\item A clean-tree rebuild regenerates the readable circuit, resynthesizes only its affine network,
+regenerates the normalized graph, and compares all generated artifacts byte for byte.
+\end{enumerate}
+
+These checks have deliberately different proof obligations.  The first two alone each give a
+complete finite correctness check for the upper bound.  The remaining checks establish provenance,
+representation consistency, and deterministic reproducibility.  None of them is used to assert a
+29-gate lower bound.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+The explicit staged construction in this paper is a legal one-bit Boolean circuit with nonlinear
+schedule \(9+5+15=29\).  Its complete 256-entry output table is the FIPS 197 forward AES S-box table.
+Therefore \(\MC(\AES)\leq29\).  A concrete implementation uses 228 one-bit instructions and has
+AND-depth 6.  The derivation from the official NIST 32-AND construction, the three-block
+\(\F_4\) identity, the formal quadratic bridge, and multiple independent evaluators provide
+additional checks, but the theorem ultimately rests on the explicit formulas and complete finite
+evaluation.  The construction establishes an upper bound and does not establish optimality.
+
+\appendix
+
+\section{Complete staged decomposition}
+\label{app:decomposition}
+
+All masks in this appendix use \cref{def:masks}.  The product table supplies every factor of all 24
+outer AND gates.  The staged tables then supply every input coordinate, every factor of the five
+middle AND gates, every post-middle coordinate, and every output expression.  Together these tables
+are a complete specification of \(C_{29}\).
+
+\input{products.tex}
+\input{staged.tex}
+
+\subsection{Formal target and reconstruction masks}
+\input{targets.tex}
+
+\section{Complete finite evaluation and normalized graph}
+\label{app:finite}
+
+\input{evaluation.tex}
+
+\subsection{Normalized XOR--AND graph}
+
+The following certificate absorbs all affine gates into masks.  Mask bit 0 is the constant 1, mask
+bits 1--8 are \(U_0,\ldots,U_7\), and each later basis bit is the output of one preceding AND row.
+It therefore gives a compact, implementation-independent description of the 29 nonlinear gates and
+the eight final affine output masks.
+
+\input{xag.tex}
+
+\section{Repository artifacts and standalone verification}
+\label{app:artifacts}
+
+This final appendix identifies the executable artifacts corresponding to the mathematical objects
+above.  Internal repository paths are confined to this appendix.
+
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.43\textwidth}>{\raggedright\arraybackslash}p{0.49\textwidth}@{}}
+\caption{Principal released artifacts and fixed SHA-256 digests.}\label{tab:artifacts}\\
+\toprule
+artifact & digest or role \\
+\midrule
+\endfirsthead
+\toprule
+artifact & digest or role \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\path{circuits/aes-sbox-fwd-g228-a29-d35-ad6.slp} & \primaryhash \\
+\path{circuits/aes-sbox-fwd-g455-a29-d35-ad6-transparent.slp} & \transparenthash \\
+\path{certificates/aes29.xag} & \xaghash \\
+\path{certificates/tower24_witness.txt} & \towerhash \\
+\path{certificates/staged29_witness.txt} & \stagedhash \\
+\path{baseline/aes-sbox-fwd-g113-a32-d27-ad6.slp} & exact bytes of the official NIST SLP; \baselinehash \\
+\path{verify/verify_staged29.py} & strict parser and exhaustive evaluator for the complete staged certificate \\
+\path{verify/minimal_verify.py} & strict standalone SLP parser, FIPS algebraic/table cross-check, exhaustive evaluator, tally, and depth checker \\
+\path{verify/verify_tower24.py} & independent NIST target derivation, formal 4096-point bridge, and staged 256-point check \\
+\path{verify/run_all.sh} & redundant full verification suite \\
+\end{longtable}
+
+The shortest checks of the two direct certificates are
+\begin{lstlisting}[language=bash]
+python3 verify/verify_staged29.py
+python3 verify/minimal_verify.py
+\end{lstlisting}
+The complete redundant audit is
+\begin{lstlisting}[language=bash]
+./verify/run_all.sh
+\end{lstlisting}
+The canonical paper source is \path{article/article.tex}.  The release process first generates the
+included tables, compiles that TeX source to \path{article/article.pdf}, and only after the PDF
+exists renders the same expanded TeX source as the mathematical GitHub Pages document
+\path{docs/index.html}.  The HTML is therefore a second rendering of the paper, not a separate
+informal article.  Public copies of the circuit, certificates, verifier, and PDF are placed in
+\path{docs/files/} and checked byte for byte.
+
+\subsection{Standalone exhaustive implementation verifier}
+
+The following listing uses only the Python standard library.  It contains a literal copy of the FIPS
+S-box table, independently computes the algebraic definition, strictly parses the complete released
+SLP container, checks exact counts and depths, and evaluates all 256 inputs.
+
+\input{minimal-verifier.tex}
+
+\printbibliography
+
+\end{document}
