@@ -200,6 +200,7 @@ def normalized_text(text: str) -> str:
 def check_html() -> None:
     require(HTML.is_file(), "docs/index.html is missing")
     source = HTML.read_text(encoding="utf-8")
+    require(r"\allowbreak" not in source, r"HTML contains unsupported MathJax command \allowbreak")
     collector = DocumentCollector()
     collector.feed(source)
 

@@ -254,6 +254,10 @@ def postprocess_html(text: str) -> str:
     # Pandoc versions differ on this optional citeproc presentation attribute.
     text = re.sub(r' data-entry-spacing="[^"]*"', "", text)
 
+    # LaTeX uses this as a PDF line-break hint, but MathJax renders it as an
+    # unknown command.  HTML tables already provide horizontal scrolling.
+    text = text.replace(r"\allowbreak", "")
+
     # Supply stable anchors for all labels retained inside MathJax source.
     display_pattern = re.compile(r'<span\b[^>]*\bclass="math display"[^>]*>(.*?)</span>', re.DOTALL)
 
