@@ -1,4 +1,4 @@
-name: Verify certificates, paper sources, and site
+name: Verify circuit and publication
 
 on:
   push:
@@ -8,26 +8,93 @@ on:
 permissions:
   contents: read
 
-env:
-  PYTHONDONTWRITEBYTECODE: "1"
-
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install Pandoc for the canonical TeX-to-HTML check
+      - name: Check out the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check the public tree
+        shell: bash
+        run: |
+          comm -3 \
+            <(git ls-files | LC_ALL=C sort) \
+            <(printf '%s\n' \
+              .gitattributes \
+              .github/workflows/verify.yml \
+              .gitignore \
+              Makefile \
+              README.md \
+              certificates/aes29.xag \
+              circuits/aes-sbox-fwd-g228-a29-d35-ad6.slp \
+              docs/.nojekyll \
+              docs/article.css \
+              docs/index.html \
+              docs/paper.pdf \
+              paper/html.xsl \
+              paper/paper.tex \
+              verify.py | LC_ALL=C sort) | tee "$RUNNER_TEMP/tree.diff"
+          test ! -s "$RUNNER_TEMP/tree.diff"
+
+      - name: Install publication dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc
-      - name: Run the complete finite audit
-        run: ./verify/run_all.sh
-      - name: Check generated LaTeX appendices
-        run: python3 tools/build_article_sources.py --check
-      - name: Check the generated GitHub Pages paper
-        run: python3 tools/build_site.py --check
-      - name: Check release integrity
-        run: python3 tools/check_release.py
+          sudo apt-get install --no-install-recommends -y \
+            latexmk \
+            libarchive-zip-perl \
+            libfile-which-perl \
+            libimage-size-perl \
+            libio-string-perl \
+            libjson-xs-perl \
+            libparse-recdescent-perl \
+            libpod-parser-perl \
+            libtext-unidecode-perl \
+            liburi-perl \
+            libwww-perl \
+            libxml-libxml-perl \
+            libxml-libxslt-perl \
+            qpdf \
+            texlive-fonts-recommended \
+            texlive-latex-base \
+            texlive-latex-extra
+
+      - name: Install LaTeXML 0.8.8
+        shell: bash
+        run: |
+          source_dir="$RUNNER_TEMP/latexml-source"
+          install_dir="$RUNNER_TEMP/latexml-install"
+          git init -q "$source_dir"
+          git -C "$source_dir" remote add origin https://github.com/brucemiller/LaTeXML.git
+          git -C "$source_dir" fetch --depth=1 origin ae2c8b266d1aa04af4350a64c79215bbe4b7c482
+          git -C "$source_dir" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$source_dir" rev-parse HEAD)" = ae2c8b266d1aa04af4350a64c79215bbe4b7c482
+          cd "$source_dir"
+          perl Makefile.PL \
+            INSTALL_BASE="$install_dir" \
+            NOMKTEXLSR \
+            TEXMF="$install_dir/texmf"
+          make -j2
+          make install
+          echo "$install_dir/bin" >> "$GITHUB_PATH"
+          echo "PERL5LIB=$install_dir/lib/perl5" >> "$GITHUB_ENV"
+
+      - name: Verify the circuit
+        run: python3 verify.py
+
+      - name: Regenerate the publication twice
+        shell: bash
+        run: |
+          latexmlc --VERSION 2>&1 | grep -F 'LaTeXML version 0.8.8'
+          make clean
+          rm -f docs/index.html docs/paper.pdf
+          make publication
+          cp docs/index.html "$RUNNER_TEMP/index.first.html"
+          cp docs/paper.pdf "$RUNNER_TEMP/paper.first.pdf"
+          make clean
+          rm -f docs/index.html docs/paper.pdf
+          make publication
+          cmp "$RUNNER_TEMP/index.first.html" docs/index.html
+          cmp "$RUNNER_TEMP/paper.first.pdf" docs/paper.pdf
+          git diff --exit-code -- docs/index.html docs/paper.pdf
+          test -z "$(git status --porcelain --untracked-files=all)"

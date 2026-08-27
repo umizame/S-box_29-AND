@@ -1,0 +1,217 @@
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #fff;
+}
+
+body {
+  margin: 0;
+  color: #191919;
+  background: #fff;
+  font: 17px/1.66 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  text-rendering: optimizeLegibility;
+}
+
+.ltx_page_content {
+  max-width: 49rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 5rem;
+}
+
+a {
+  color: #174f91;
+  text-decoration-thickness: .06em;
+  text-underline-offset: .13em;
+}
+
+a:hover {
+  color: #0b386d;
+}
+
+h1,
+h2,
+h3 {
+  color: #111;
+  line-height: 1.22;
+  text-wrap: balance;
+}
+
+.ltx_title_document {
+  max-width: 42rem;
+  margin: 0 auto .65rem;
+  text-align: center;
+  font-size: clamp(1.8rem, 5vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -.015em;
+}
+
+.ltx_authors,
+.ltx_dates {
+  text-align: center;
+}
+
+.ltx_dates {
+  margin: .35rem 0 2.8rem;
+  font-size: .95rem;
+}
+
+.ltx_abstract {
+  margin: 2rem 0 2.8rem;
+  padding: 1rem 1.2rem;
+  border-block: 1px solid #aaa;
+}
+
+.ltx_abstract .ltx_title {
+  margin: 0 0 .55rem;
+  font-size: 1.12rem;
+}
+
+.ltx_section > .ltx_title,
+.ltx_bibliography > .ltx_title,
+.ltx_appendix > .ltx_title {
+  margin: 2.8rem 0 1rem;
+  font-size: 1.42rem;
+  font-weight: 600;
+}
+
+.ltx_subsection > .ltx_title {
+  margin: 2rem 0 .8rem;
+  font-size: 1.16rem;
+  font-weight: 600;
+}
+
+p {
+  hanging-punctuation: first last;
+}
+
+.ltx_theorem,
+.ltx_proof {
+  margin: 1.45rem 0;
+}
+
+.ltx_title_theorem,
+.ltx_title_proof {
+  margin-right: .35rem;
+  font-weight: 600;
+}
+
+.ltx_title_proof {
+  font-style: italic;
+}
+
+.ltx_equation {
+  width: 100%;
+  margin: 1.05rem 0;
+  border-collapse: collapse;
+}
+
+.ltx_eqn_eqno {
+  width: 3.8rem;
+  white-space: nowrap;
+}
+
+math[display="block"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+figure,
+.ltx_table {
+  max-width: 100%;
+  margin: 1.6rem 0;
+  overflow-x: auto;
+}
+
+figcaption,
+.ltx_caption {
+  margin-bottom: .65rem;
+  font-size: .93rem;
+}
+
+.ltx_tabular {
+  margin: 0 auto;
+  border-collapse: collapse;
+  font-size: .94rem;
+}
+
+.ltx_tabular th,
+.ltx_tabular td {
+  padding: .36rem .72rem;
+  vertical-align: top;
+}
+
+.ltx_thead {
+  border-block: 2px solid #333;
+}
+
+.ltx_tbody {
+  border-bottom: 2px solid #333;
+}
+
+.ltx_listing_data {
+  margin: .25rem 0 .55rem;
+  text-align: right;
+  font: .8rem/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.ltx_listing_code {
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  padding: .9rem 1rem;
+  border: 1px solid #aaa;
+  background: #f7f7f7;
+  font: .8rem/1.48 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  tab-size: 2;
+}
+
+.ltx_biblist {
+  padding-left: 1.7rem;
+}
+
+.ltx_bibitem {
+  margin: .8rem 0;
+}
+
+@media (max-width: 42rem) {
+  body {
+    font-size: 16px;
+  }
+
+  .ltx_page_content {
+    padding: 2.2rem 1rem 4rem;
+  }
+
+  .ltx_tabular th,
+  .ltx_tabular td {
+    padding-inline: .5rem;
+  }
+}
+
+@media print {
+  body {
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .ltx_page_content {
+    max-width: none;
+    padding: 0;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  .ltx_listing_data {
+    display: none;
+  }
+}

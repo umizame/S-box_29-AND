@@ -1,0 +1,784 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=27mm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs,array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!38!black,
+  citecolor=blue!38!black,
+  urlcolor=blue!48!black,
+  pdftitle={An Explicit 29-AND Circuit for the AES S-box},
+  pdfauthor={umizame},
+  pdfsubject={An explicit twenty-nine-AND circuit for the forward AES S-box},
+  pdfkeywords={AES S-box, Boolean circuit, finite fields, AND gates}
+}
+
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codeframe}{RGB}{198,198,198}
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=false,
+  aboveskip=0.8em,
+  belowskip=0.8em
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+
+\newcommand{\F}{\mathbb F}
+\newcommand{\AND}{\mathsf{AND}}
+\newcommand{\XOR}{\mathsf{XOR}}
+\newcommand{\gate}[1]{\mathsf A_{#1}}
+
+\title{\bfseries An Explicit 29-AND Circuit for the AES S-box}
+\author{umizame}
+\date{12 July 2026; revised 26 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give an explicit straight-line program for the forward AES S-box using
+twenty-nine AND gates.  The construction rests on Canright's all-normal
+tower for the AES field and on the five-AND inversion of Boyar, Matthews,
+and Peralta in the field of sixteen elements.  Its essential economy is a
+joint calculation over the field of four elements: the three pairwise
+products of three operands are obtained from three early ANDs and five late
+ANDs.  Using this identity three times around the five-AND inversion gives
+the schedule \(9+5+15=29\).  Affine coordinate data then realize this
+schedule as a normalized XOR--AND graph and as the explicit straight-line
+program.
+\end{abstract}
+
+\section{Introduction}
+
+The nonlinear step of the AES S-box is inversion in the field of 256
+elements; the remaining operations are affine over \(\F_2\).  Canright's
+all-normal tower makes this inversion especially economical by resolving it
+into arithmetic in successively smaller fields \cite[Sec.~2]{canright}.  Boyar,
+Matthews, and Peralta subsequently gave a five-AND circuit for the inversion
+which occurs at the middle level of that tower
+\cite[Sec.~2.1, Fig.~2]{bmp}.  These two works
+supply, respectively, the tower coordinates and the middle-level inverse
+used below.
+
+The straight-line program presented here uses the operations \(\XOR\),
+\(\AND\), and \(\mathsf{NOT}\), with unrestricted fan-out.  An AND gate is
+multiplication in \(\F_2\); XOR and NOT are affine and therefore require no
+AND gate.  The new ingredient is a schedule for three multiplications in
+\(\F_{16}\).  Their nine constituent multiplications in \(\F_4\) occur in
+three triples.  In each triple the first product is needed before the
+\(\F_{16}\) inverse is known, whereas the other two are needed afterwards.
+A single identity computes the first product with three ANDs and completes
+the other two with five more.  The nonlinear count is consequently
+\[
+  3\cdot(3+5)+5=29.
+\]
+
+The proof proceeds entirely in Canright's coordinates.  Section~2 recalls
+the tower and the two multiplication formulae that will be used.
+Section~3 proves the joint \(\F_4\) identity.  Section~4 places its three
+copies around the Boyar--Matthews--Peralta inverse.  Section~5 supplies the
+affine coordinates that realize the construction as a normalized XOR--AND
+graph and as the explicit straight-line program.
+
+\section{Canright's tower form}
+
+Let
+\[
+ \F_{256}=\F_2[t]/(t^8+t^4+t^3+t+1),\qquad X=[t].
+\]
+This is the polynomial representation specified in FIPS~197
+\cite[Secs.~3.2 and 4, Eqs.~(4.1) and (4.3)]{fips}.  For a byte
+\(x=\sum_{i=0}^7 b_iX^i\), with \(b_i\in\F_2\), set
+\[
+ U_j=b_{7-j}\qquad(0\leq j<8),
+\]
+so that \(U_0\) is the most significant input bit.  If
+\(x^{-1}=\sum_{i=0}^7v_iX^i\), with \(v_i\in\F_2\) and \(0^{-1}=0\),
+FIPS~197 defines the output bits by
+\begin{equation}\label{eq:fips-affine}
+ o_i=v_i+v_{i+4}+v_{i+5}+v_{i+6}+v_{i+7}+c_i,
+ \qquad \sum_{i=0}^7c_i2^i=\mathtt{63},
+\end{equation}
+where \(c_i\in\F_2\), \(\mathtt{63}\) is written in hexadecimal, and the
+subscripts on \(v_i\) are read modulo eight
+\cite[Sec.~5.1.1, Eqs.~(5.2)--(5.3)]{fips}.  We use
+the same zero-inverse convention in every field below, and write the output
+in the most-significant-first order \(S_j=o_{7-j}\).
+
+We now take Canright's all-normal tower
+\[
+ \F_2\subset\F_4\subset\F_{16}\subset\F_{256},
+\]
+with ordered bases for the three successive quadratic extensions
+\[
+ [W^2,W],\qquad [Z^4,Z],\qquad [Y^{16},Y]
+\]
+and defining relations
+\begin{equation}\label{eq:tower-relations}
+ W^2+W+1=0,\qquad Z^2+Z+W^2=0,\qquad
+ Y^2+Y+WZ=0.
+\end{equation}
+These are precisely the field and bases used in Canright's all-normal
+implementation \cite[Sec.~2.1]{canright}.  The relations give
+\begin{equation}\label{eq:tower-consequences}
+ W^3=1,\qquad Z^4+Z=1,\qquad Z^5=W^2,\qquad
+ Y^{16}+Y=1,\qquad Y^{17}=WZ.
+\end{equation}
+Indeed, squaring the middle relation gives
+\(Z^4=Z+W^2+W=Z+1\), and multiplication by \(Z\) then gives
+\(Z^5=W^2\).  At the upper level, the two roots of the quadratic in
+\eqref{eq:tower-relations} are \(Y\) and \(Y+1\); the nontrivial
+\(\F_{16}\)-conjugate of \(Y\) is \(Y^{16}\).  Their sum and product give
+the last two identities.
+
+Canright's change-of-basis matrix maps the tower coordinates to the AES
+polynomial coordinates \cite[Sec.~4, Eq.~(10)]{canright}.  Its inverse
+carries the FIPS byte to
+\[
+ G=G_1Y^{16}+G_0Y,\qquad G_0,G_1\in\F_{16}.
+\]
+The rows of this inverse map, in the bit order just fixed, are recorded in
+Appendix~A.  For the formulas below, it is convenient to multiply each
+\(\F_4\)-coordinate by \(W\) and put
+\begin{equation}\label{eq:H-definition}
+ H=WG=LY^{16}+RY,\qquad L,R\in\F_{16}.
+\end{equation}
+This scaling is affine, since for \(a_0,a_1\in\F_2\),
+\begin{equation}\label{eq:W-scale}
+ W(a_0W^2+a_1W)=(a_0+a_1)W^2+a_0W.
+\end{equation}
+
+\begin{lemma}[The upper norm]\label{lem:upper-norm}
+For \(H\) as in \eqref{eq:H-definition}, define
+\begin{equation}\label{eq:DQ}
+ D=LR+WZ(L+R)^2,\qquad Q=D^{-1}.
+\end{equation}
+Then
+\begin{equation}\label{eq:H-inverse}
+ H^{-1}=RQY^{16}+QLY.
+\end{equation}
+Consequently \(W H^{-1}=G^{-1}\).
+\end{lemma}
+
+\begin{proof}
+The sixteenth-power Frobenius fixes \(\F_{16}\) and exchanges
+\(Y^{16}\) and \(Y\).  Thus
+\[
+ H^{16}=RY^{16}+LY.
+\]
+Using \(Y^{16}+Y=1\) and \(Y^{17}=WZ\), multiplication gives
+\[
+ HH^{16}=LR+WZ(L^2+R^2)=LR+WZ(L+R)^2=D.
+\]
+If \(H\ne0\), division by this norm proves \eqref{eq:H-inverse}.  If
+\(H=0\), the basis \([Y^{16},Y]\) gives \(L=R=0\), whence \(D=Q=0\),
+and the same formula holds under the declared convention.  Finally,
+\(H=WG\) and \(W^3=1\), so \(WH^{-1}=G^{-1}\).
+\end{proof}
+
+The three products \(LR\), \(RQ\), and \(QL\) will be formed with the
+following version of Canright's normal-basis multiplier
+\cite[Sec.~2.1, Fig.~3]{canright}.
+
+\begin{lemma}[Multiplication in \(\F_{16}\)]\label{lem:f16-product}
+Let
+\[
+ A=A_1Z^4+A_0Z,\qquad B=B_1Z^4+B_0Z,\qquad A_i,B_i\in\F_4,
+\]
+and set
+\begin{equation}\label{eq:f16-three-products}
+ \ell=A_0B_0,\qquad h=(WA_1)(WB_1),\qquad
+ s=(A_0+WA_1)(B_0+WB_1).
+\end{equation}
+Then
+\begin{equation}\label{eq:f16-reconstruction}
+ AB=(\ell+h+Ws)Z^4+(W^2h+Ws)Z.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+The relations in \eqref{eq:tower-consequences} give
+\begin{align*}
+ (Z^4)^2&=WZ^4+W^2Z,\\
+ Z^2&=W^2Z^4+WZ,\\
+ Z^5&=W^2Z^4+W^2Z.
+\end{align*}
+Hence, writing \(C=A_1B_0+A_0B_1\), direct multiplication gives
+\begin{align*}
+ AB={}&(WA_1B_1+W^2A_0B_0+W^2C)Z^4\\
+     &+(W^2A_1B_1+WA_0B_0+W^2C)Z.
+\end{align*}
+Now \(h=W^2A_1B_1\) and
+\(s=\ell+h+WC\).  Substitution, together with
+\(1+W=W^2\), reduces the two coefficients to those in
+\eqref{eq:f16-reconstruction}.
+\end{proof}
+
+\section{Three products in \texorpdfstring{\(\F_4\)}{F4}}
+
+Write
+\[
+ \tau(x)=x+x^2\qquad(x\in\F_4)
+\]
+for the trace to \(\F_2\).  The normal basis makes both coordinates
+visible as traces.
+
+\begin{lemma}\label{lem:trace-identities}
+If \(x=x_0W^2+x_1W\), with \(x_0,x_1\in\F_2\), then
+\begin{equation}\label{eq:trace-coordinates}
+ \tau(x)=x_0+x_1,\qquad \tau(Wx)=x_1,\qquad
+ \tau(W^2x)=x_0.
+\end{equation}
+For all \(x,y\in\F_4\),
+\begin{align}
+ \tau(x)\tau(Wy)+\tau(Wx)\tau(y)&=\tau(xy^2),
+ \label{eq:trace-first}\\
+ \tau(x)\tau(y)+\tau(Wx)\tau(Wy)&=\tau(Wxy).
+ \label{eq:trace-second}
+\end{align}
+\end{lemma}
+
+\begin{proof}
+Squaring \(x_0W^2+x_1W\) exchanges its two normal-basis coordinates,
+which proves \eqref{eq:trace-coordinates}.  If
+\(y=y_0W^2+y_1W\), with \(y_0,y_1\in\F_2\), the left side of
+\eqref{eq:trace-first} is
+\(x_0y_1+x_1y_0\), while the left side of
+\eqref{eq:trace-second} is
+\(x_0y_0+x_0y_1+x_1y_0\).  Multiplication with \(W^2+W=1\) shows that
+these are respectively \(\tau(xy^2)\) and \(\tau(Wxy)\).
+\end{proof}
+
+Let \(a,b,c\in\F_4\).  We first recover \(ab\) with three ANDs that do
+not depend on \(c\); five later ANDs will then recover \(bc\) and \(ca\)
+jointly.  The three early products are
+\begin{equation}\label{eq:early-products}
+ p_1=\tau(a)\tau(b),\qquad
+ p_2=\tau(Wa)\tau(Wb),\qquad
+ p_3=\tau(W^2a)\tau(W^2b).
+\end{equation}
+Since \(\tau(W^2x)=\tau(x)+\tau(Wx)\), equations
+\eqref{eq:trace-first} and \eqref{eq:trace-second} give
+\begin{equation}\label{eq:sigma-ab}
+ \sigma:=p_1+p_2+p_3=\tau(ab^2),\qquad
+ ab=(p_1+p_3)W^2+(p_1+p_2)W.
+\end{equation}
+For the second formula, the coefficient of \(W\) is
+\(\tau(Wab)=p_1+p_2\); applying \eqref{eq:trace-second} after cycling
+both arguments by \(W^2\) gives the coefficient of \(W^2\) as
+\(\tau(W^2ab)=p_1+p_3\).
+
+For distinct \(r,t\in\{1,W,W^2\}\), put
+\begin{equation}\label{eq:cell}
+ e_{r,t}=
+ \bigl(\tau(ra)+\tau(tb)+\tau(Wc)\bigr)
+ \bigl(\tau(Wra)+\tau(Wtb)+\tau(c)\bigr).
+\end{equation}
+Among the six off-diagonal cells \(e_{r,t}\), the five \(e\)-terms used
+below form the union of the rows \(r=W,W^2\) and the columns \(t=1,W^2\).
+
+\begin{proposition}[The five late products]\label{prop:f4-joint}
+In addition to \(p_1,p_2,p_3\), define
+\begin{equation}\label{eq:late-products}
+\begin{aligned}
+ p_4&=e_{1,W^2},&
+ p_5&=e_{W,W^2},\\
+ p_6&=e_{W^2,1}+\tau(a+Wb+c),&
+ p_7&=e_{W,1},\\
+ p_8&=e_{W^2,W}+\tau(a+W^2b+c).
+\end{aligned}
+\end{equation}
+Each \(p_i\) in \eqref{eq:late-products} is the output of one AND gate.
+Moreover,
+\begin{align}
+ \tau(W^2bc)&=\sigma+p_5+p_7+\tau(b),
+ \label{eq:bc-first}\\
+ \tau(bc)&=\sigma+p_6+p_8+\tau(W^2b),
+ \label{eq:bc-second}\\
+ \tau(Wca)&=\sigma+p_6+p_7+\tau(a+Wb+c)+\tau(W^2a),
+ \label{eq:ca-first}\\
+ \tau(ca)&=\sigma+p_4+p_5+\tau(Wa).
+ \label{eq:ca-second}
+\end{align}
+Thus \(ab\), \(bc\), and \(ca\) are obtained from eight AND gates,
+the first three of which do not depend on \(c\).
+\end{proposition}
+
+\begin{proof}
+We first compute the sum of two cells in a common row and in a common
+column; the stated formulas then follow after accounting for the two affine
+shears.
+Write \(\tau_r(x)=\tau(rx)\) and
+\(\eta(x)=\tau(x)\tau(Wx)\).  The three bits
+\(\tau_1(x),\tau_W(x),\tau_{W^2}(x)\) sum to zero.  If
+\(\{r,t,u\}=\{1,W,W^2\}\), expansion of the two cells in a fixed row
+gives
+\begin{equation}\label{eq:row-expansion}
+\begin{aligned}
+ e_{r,t}+e_{r,u}={}&
+  \tau_r(a)\tau_{Wr}(b)+\tau_{Wr}(a)\tau_r(b)\\
+ &+\tau_W(c)\tau_{Wr}(b)+\tau_1(c)\tau_r(b)\\
+ &+\tau_t(b)\tau_{Wt}(b)+\tau_u(b)\tau_{Wu}(b).
+\end{aligned}
+\end{equation}
+The first line is \(\tau(ab^2)=\sigma\) by
+\eqref{eq:trace-first}, since \(r^3=1\).  The second is
+\(\tau(Wrbc)\) by \eqref{eq:trace-second}.  The last line is
+\(\eta(tb)+\eta(ub)\).  Writing \(x=x_0W^2+x_1W\), with
+\(x_0,x_1\in\F_2\), gives
+\[
+\eta(x)=x_1(x_0+x_1)=x_0x_1+x_1
+        =x^3+\tau(W^2x).
+\]
+Here \(x^3\) is the norm from \(\F_4\) to \(\F_2\).
+Since \(t^3=u^3=1\), the two norm terms cancel; since \(t+u=r\),
+the remaining trace is \(\tau(W^2rb)\).  Thus
+\begin{equation}\label{eq:row-identity}
+ e_{r,t}+e_{r,u}
+ =\sigma+\tau(Wrbc)+\tau(W^2rb).
+\end{equation}
+
+The same argument down a column gives
+\begin{align*}
+ e_{r,t}+e_{u,t}={}&
+  \tau_t(b)\tau_{Wt}(a)+\tau_{Wt}(b)\tau_t(a)\\
+ &+\tau_W(c)\tau_{Wt}(a)+\tau_1(c)\tau_t(a)\\
+ &+\tau_r(a)\tau_{Wr}(a)+\tau_u(a)\tau_{Wu}(a),
+\end{align*}
+and therefore
+\begin{equation}\label{eq:column-identity}
+ e_{r,t}+e_{u,t}
+ =\sigma+\tau(Wtca)+\tau(W^2ta).
+\end{equation}
+Here the first line is again \(\sigma\) by
+\eqref{eq:trace-first}; explicitly,
+\(\tau(ba^2)=\tau((ba^2)^2)=\tau(ab^2)\), by Frobenius invariance of
+the trace.  The second line follows from \eqref{eq:trace-second}.  The last
+line is
+\(\eta(ra)+\eta(ua)\); cancellation of the two norms and
+\(r+u=t\) leave \(\tau(W^2ta)\).
+
+Equations~\eqref{eq:row-identity} and \eqref{eq:column-identity} organize
+the reconstruction: row sums give traces of \(bc\), whereas column sums
+give traces of \(ca\).
+
+It remains to account for the two sheared cells.  Write the two factors of
+\(e_{W^2,1}\) as \(f\) and \(g\).  The second is
+\(g=\tau(a+Wb+c)\); hence
+\[
+ p_6=fg+g=(f+g)g,
+\]
+because \(g^2=g\) in \(\F_2\).  Thus \(p_6\) is one AND, with factors
+\(f+g\) and \(g\).  The second factor of \(e_{W^2,W}\) is
+\(\tau(a+W^2b+c)\), and the same argument proves the assertion for
+\(p_8\).
+
+Taking \(r=W\) and columns \(W^2,1\) in
+\eqref{eq:row-identity} gives \eqref{eq:bc-first}.  Taking \(r=W^2\)
+and columns \(1,W\), and observing that the two shear terms sum to
+\(\tau(b)\), while
+\(\tau(Wb)+\tau(b)=\tau(W^2b)\), gives \eqref{eq:bc-second}.  Taking
+column \(1\) and rows
+\(W^2,W\) in \eqref{eq:column-identity} gives
+\eqref{eq:ca-first}; taking column \(W^2\) and rows \(1,W\) gives
+\eqref{eq:ca-second}.
+
+Finally, \eqref{eq:trace-coordinates} gives the explicit reconstructions
+\[
+ \begin{split}
+ bc&=\tau(W^2bc)W^2+
+       \bigl(\tau(bc)+\tau(W^2bc)\bigr)W,\\
+ ca&=\bigl(\tau(ca)+\tau(Wca)\bigr)W^2+\tau(Wca)W.
+ \end{split}
+\]
+Thus the four displayed traces recover \(bc\) and \(ca\), while
+\eqref{eq:sigma-ab} has already recovered \(ab\).
+\end{proof}
+
+\section{The twenty-nine AND gates}
+
+Write
+\[
+ L=L_1Z^4+L_0Z,\qquad
+ R=R_1Z^4+R_0Z,\qquad
+ Q=Q_1Z^4+Q_0Z,\qquad L_i,R_i,Q_i\in\F_4.
+\]
+Apply Proposition~\ref{prop:f4-joint} to the three triples
+\begin{equation}\label{eq:three-rows}
+ \begin{array}{ccc}
+ a&b&c\\
+ \hline
+ L_0&R_0&Q_0\\
+ WL_1&WR_1&WQ_1\\
+ L_0+WL_1&R_0+WR_1&Q_0+WQ_1.
+ \end{array}
+\end{equation}
+In the three rows, the products \(ab\) are respectively the quantities
+\(\ell,h,s\) of Lemma~\ref{lem:f16-product} for \(LR\).  The products
+\(bc\) are the same three quantities for \(RQ\), and the products
+\(ca\) are those for \(QL\).  Thus the first three ANDs in each row
+make \(LR\) available; the final five, once \(Q\) is known, complete
+\(RQ\) and \(QL\).
+
+It remains to obtain \(Q=D^{-1}\) between these two stages.  We use the
+five-product inversion of Boyar, Matthews, and Peralta, written in
+Canright's coordinates.
+
+\begin{proposition}[The middle inverse]\label{prop:middle-inverse}
+Write
+\begin{equation}\label{eq:D-coordinates}
+ D=(d_0W^2+d_1W)Z^4+(d_2W^2+d_3W)Z.
+\end{equation}
+Here \(d_0,\ldots,d_3\in\F_2\).
+Define, in order,
+\begin{equation}\label{eq:bmp-products}
+\begin{aligned}
+ m_1&=(d_0+d_1)(d_2+d_3),\\
+ m_2&=d_1(d_2+m_1),\\
+ m_3&=(d_0+m_1)d_3,\\
+ m_4&=d_2(m_1+m_3),\\
+ m_5&=(d_0+m_2)(d_2+m_1+m_4).
+\end{aligned}
+\end{equation}
+Also define
+\begin{equation}\label{eq:Q-coordinates}
+ \begin{split}
+ q_0&=d_2+d_3+m_4,\qquad
+ q_1=d_3+m_3+m_4,\\
+ q_2&=d_0+d_1+m_2+m_5,\qquad
+ q_3=d_1+m_5.
+ \end{split}
+\end{equation}
+Then the five products in \eqref{eq:bmp-products} give
+\[
+ Q=(q_0W^2+q_1W)Z^4+(q_2W^2+q_3W)Z=D^{-1}.
+\]
+\end{proposition}
+
+\begin{proof}
+Boyar, Matthews, and Peralta represent \(\Delta\) using bits
+\(x_1,\ldots,x_4\in\F_2\) as
+\[
+ \Delta=(x_1W+x_2W^2)Z^2+(x_3W+x_4W^2)Z^8
+\]
+and give a five-AND circuit for \(\Delta^{-1}\)
+\cite[Sec.~2.1, Fig.~2]{bmp}.  Set
+\begin{equation}\label{eq:bmp-change}
+ (x_1,x_2,x_3,x_4)=(d_0+d_1,d_0,d_2+d_3,d_2).
+\end{equation}
+Since \(Z^{16}=Z\), squaring \(\Delta\) and multiplying by \(W^2\)
+gives \(D=W^2\Delta^2\).  Indeed,
+\(W^2((d_0+d_1)W+d_0W^2)^2=d_0W^2+d_1W\), and the
+same identity holds for the lower pair.
+Taking inverses and using \(W^3=1\) then gives
+\begin{equation}\label{eq:D-Delta}
+ D=W^2\Delta^2,\qquad Q=D^{-1}=W(\Delta^{-1})^2.
+\end{equation}
+
+Under \eqref{eq:bmp-change}, the five ANDs in that circuit are exactly
+\(m_1,\ldots,m_5\) in
+\eqref{eq:bmp-products}.  Its four output coordinates are
+\begin{align*}
+ y_1&=d_3+m_3+m_4,& y_2&=d_2+m_3,\\
+ y_3&=d_1+m_5,& y_4&=d_0+m_2,
+\end{align*}
+where
+\[
+ \Delta^{-1}=(y_1W+y_2W^2)Z^2+(y_3W+y_4W^2)Z^8.
+\]
+For \(\alpha=y_1W+y_2W^2\), one has
+\[
+ W\alpha^2=(y_1+y_2)W^2+y_1W.
+\]
+Applying this to both pairs in \eqref{eq:D-Delta} yields precisely the
+four expressions in \eqref{eq:Q-coordinates}.  The five-product circuit
+returns zero on zero, so the identity also respects the convention fixed
+above.
+\end{proof}
+
+We may now read off the entire schedule.  The three early gates in each row of
+\eqref{eq:three-rows} use only \(L\) and \(R\), and nine ANDs therefore
+produce \(LR\).  Squaring and multiplication by the constant \(WZ\) are
+linear, so \(D=LR+WZ(L+R)^2\) is then available without another AND.
+Proposition~\ref{prop:middle-inverse} produces \(Q\) with five ANDs.  The
+five late gates in each row of \eqref{eq:three-rows} then produce \(RQ\)
+and \(QL\) with fifteen further ANDs.  Lemma~\ref{lem:upper-norm} gives
+\(H^{-1}\).  Multiplication by \(W\), the combined linear map from the tower
+coordinates to the linear part of the FIPS output, and addition of the FIPS
+constant are all affine.  This schedule is acyclic, and its nonlinear tally is
+\[
+ 9+5+15=29.
+\]
+
+\section{The explicit circuit}\label{sec:identification}
+
+To separate the nonlinear schedule from a particular affine XOR network,
+Appendix~B records the construction as a normalized XOR--AND graph (XAG).
+This XAG uses the
+ordered affine basis
+\[
+ (1,U_0,\ldots,U_7,\gate{1},\ldots,\gate{29}).
+\]
+For an eight-bit linear mask \(\mu=\sum_{j=0}^7\mu_j2^j\), which is
+written in hexadecimal when displayed, define
+\[
+ \lambda_\mu=\sum_{j=0}^7\mu_jU_j;
+\]
+thus bit \(j\) selects \(U_j\), and the least significant bit selects
+\(U_0\).  By contrast, the XAG uses affine masks with an additional
+least-significant constant bit.  In an AND row for \(\gate{i}\), bit zero
+selects the constant, bits one through eight select \(U_0,\ldots,U_7\),
+and bit \(8+j\) selects \(\gate{j}\) for \(1\leq j<i\).  The product of
+the two affine forms is \(\gate{i}\).  An output row is an affine mask in
+the complete basis.
+
+Appendix~A gives all coordinate data needed to express the preceding
+construction in these masks, together with the gate ranges for the three
+rows of \eqref{eq:three-rows}.  The five products
+\(m_1,\ldots,m_5\) are \(\gate{10},\ldots,\gate{14}\).
+
+To illustrate the substitution, the lower row has
+\[
+ L_0=\lambda_{\mathtt{41}}W^2+\lambda_{\mathtt{c6}}W,\qquad
+ R_0=\lambda_{\mathtt{74}}W^2+\lambda_{\mathtt{86}}W.
+\]
+Encoding these forms in the affine-mask convention above gives the three
+early factor pairs, in the orientation used in Appendix~B,
+\[
+ (\mathtt{1e4},\mathtt{10e}),\qquad
+ (\mathtt{10c},\mathtt{18c}),\qquad
+ (\mathtt{e8},\mathtt{82}).
+\]
+These are the first three rows of Appendix~B.
+The same substitution gives \(\gate{4}\) through \(\gate{9}\).
+The four masks of \(D\) in Appendix~A give
+\[
+ (d_0+d_1,d_2+d_3)=(\mathtt{1ecf6},\mathtt{1d06a}),
+\]
+the factor pair for \(\gate{10}\); successive substitution in
+\eqref{eq:bmp-products} gives \(\gate{11}\) through \(\gate{14}\).
+
+Substituting the four masks of \(Q\) into \eqref{eq:late-products} in each
+of the three rows gives the fifteen late rows in the order tabulated in
+Appendix~A.  Finally, Lemma~\ref{lem:f16-product}
+reconstructs \(RQ\) and \(QL\), and the affine rows in Appendix~A express
+their coordinates as the eight output masks printed in Appendix~B.
+Thus every row of Appendix~B is obtained from the displayed formulae by
+successive XOR substitution.  A concrete affine realization of this XAG is
+the straight-line program supplied in the repository:
+\begin{center}
+ \href{https://github.com/umizame/S-box_29-AND/blob/master/circuits/aes-sbox-fwd-g228-a29-d35-ad6.slp}{\texttt{circuits/aes-sbox-fwd-\allowbreak g228-a29-d35-ad6.slp}}.
+\end{center}
+
+Scanning its assignments in order expresses every wire as an affine form in
+the inputs, the constant, and the outputs of preceding AND gates.  XOR and
+NOT update the affine mask; each AND assignment records its two factor masks
+and introduces the next \(\gate{i}\).  Consequently the program's AND
+assignments give, in order, the twenty-nine factor rows in Appendix~B, and
+its final affine forms give the eight output rows.
+
+\begin{theorem}\label{thm:main}
+The straight-line program above computes the forward AES S-box specified in
+FIPS~197 and contains twenty-nine AND gates.
+\end{theorem}
+
+\begin{proof}
+The inverse of Canright's change-of-basis matrix sends the AES polynomial
+coordinates to \(G\), and \eqref{eq:H-definition} gives \(H=WG\).
+Lemma~\ref{lem:f16-product},
+Proposition~\ref{prop:f4-joint}, and
+Proposition~\ref{prop:middle-inverse} construct \(RQ\) and \(QL\) with
+twenty-nine AND gates.  Lemma~\ref{lem:upper-norm} then gives
+\(WH^{-1}=G^{-1}\), including at zero.  The affine coordinates in
+Appendix~A apply multiplication by \(W\), Canright's tower-to-polynomial
+map, and the linear part of the FIPS affine map, before adding the constant in
+\eqref{eq:fips-affine}.  They therefore give the FIPS output in the declared
+bit order and the normalized XAG in Appendix~B.  The straight-line program
+above is a concrete affine realization of that XAG, so it computes the same
+output; its twenty-nine AND assignments are precisely the twenty-nine AND
+gates of the construction.
+\end{proof}
+
+\section*{Acknowledgement}
+
+GPT-5.6 Pro assisted with algebraic checking and with the preparation of the
+exposition.
+
+\appendix
+
+\section{Affine coordinates}
+
+We use both hexadecimal-mask conventions of
+Section~\ref{sec:identification}.  On the ordered linear input basis
+\((U_0,\ldots,U_7)\), bit \(j\) selects \(U_j\).  On an ordered affine
+basis \((1,V_0,\ldots,V_{n-1})\), bit zero selects the constant and bit
+\(j+1\) selects \(V_j\).  All masks below are written in hexadecimal.
+
+The rows of the inverse map from AES polynomial coordinates to Canright's
+tower coordinates, and the corresponding rows after the scaling \(H=WG\),
+are as follows \cite[Sec.~4, Eq.~(10)]{canright}.  The
+coordinate order is the tensor order induced by
+\([Y^{16},Y]\), \([Z^4,Z]\), and \([W^2,W]\).
+\begin{center}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+coordinate&\(G\)&\(H=WG\)\\
+\midrule
+\(Y^{16}Z^4W^2\)&\(\mathtt{e7}\)&\(\mathtt{69}\)\\
+\(Y^{16}Z^4W\)&\(\mathtt{8e}\)&\(\mathtt{e7}\)\\
+\(Y^{16}ZW^2\)&\(\mathtt{c6}\)&\(\mathtt{41}\)\\
+\(Y^{16}ZW\)&\(\mathtt{87}\)&\(\mathtt{c6}\)\\
+\(YZ^4W^2\)&\(\mathtt{d9}\)&\(\mathtt{59}\)\\
+\(YZ^4W\)&\(\mathtt{80}\)&\(\mathtt{d9}\)\\
+\(YZW^2\)&\(\mathtt{86}\)&\(\mathtt{74}\)\\
+\(YZW\)&\(\mathtt{f2}\)&\(\mathtt{86}\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+In particular,
+\begin{align*}
+ L_1&=\lambda_{\mathtt{69}}W^2+\lambda_{\mathtt{e7}}W,&
+ L_0&=\lambda_{\mathtt{41}}W^2+\lambda_{\mathtt{c6}}W,\\
+ R_1&=\lambda_{\mathtt{59}}W^2+\lambda_{\mathtt{d9}}W,&
+ R_0&=\lambda_{\mathtt{74}}W^2+\lambda_{\mathtt{86}}W.
+\end{align*}
+The three rows of \eqref{eq:three-rows}, with their gate ranges, are
+\begin{center}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+row&\(a\)&\(b\)&\(c\)&early; late\\
+\midrule
+lower&\(L_0\)&\(R_0\)&\(Q_0\)&\(\gate{1}\text{--}\gate{3}\); \(\gate{15}\text{--}\gate{19}\)\\
+scaled upper&\(WL_1\)&\(WR_1\)&\(WQ_1\)&\(\gate{4}\text{--}\gate{6}\); \(\gate{20}\text{--}\gate{24}\)\\
+sum&\(L_0+WL_1\)&\(R_0+WR_1\)&\(Q_0+WQ_1\)&\(\gate{7}\text{--}\gate{9}\); \(\gate{25}\text{--}\gate{29}\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+The input masks for \((a,b)\) in these rows, as pairs of
+\([W^2,W]\)-coordinates, are
+\[
+ (\mathtt{41},\mathtt{c6}),\ (\mathtt{74},\mathtt{86});\qquad
+ (\mathtt{8e},\mathtt{69}),\ (\mathtt{80},\mathtt{59});\qquad
+ (\mathtt{cf},\mathtt{af}),\ (\mathtt{f4},\mathtt{df}).
+\]
+Within every late range, the gates are \(p_4,p_5,p_6,p_7,p_8\) in that
+order; \(p_6\) and \(p_8\) use the sheared factors displayed in the proof
+of Proposition~\ref{prop:f4-joint}.
+
+On the affine basis
+\((1,U_0,\ldots,U_7,\gate{1},\ldots,\gate{9})\), the coordinate masks of
+\(D\) in \eqref{eq:D-coordinates} are
+\begin{center}
+\begin{tabular}{@{}cc@{}}
+\toprule
+coordinate&mask\\
+\midrule
+\(d_0\)&\(\mathtt{35afc}\)\\
+\(d_1\)&\(\mathtt{2b60a}\)\\
+\(d_2\)&\(\mathtt{330ea}\)\\
+\(d_3\)&\(\mathtt{2e080}\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+On the basis enlarged through \(\gate{14}\), the four coordinate masks of
+\(Q\) are
+\begin{center}
+\begin{tabular}{@{}cc@{}}
+\toprule
+coordinate&mask\\
+\midrule
+\(q_0\)&\(\mathtt{21d06a}\)\\
+\(q_1\)&\(\mathtt{32e080}\)\\
+\(q_2\)&\(\mathtt{49ecf6}\)\\
+\(q_3\)&\(\mathtt{42b60a}\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For the output coordinates, write
+\begin{align*}
+ RQ&=(T_0W^2+T_1W)Z^4+(T_2W^2+T_3W)Z,\\
+ QL&=(T_4W^2+T_5W)Z^4+(T_6W^2+T_7W)Z.
+\end{align*}
+Here \(T_0,\ldots,T_7\in\F_2\).
+In the same most-significant-first convention, composing Canright's
+tower-to-polynomial map \cite[Sec.~4, Eq.~(10)]{canright} with the linear
+part of the FIPS affine map
+\cite[Sec.~5.1.1, Eq.~(5.4)]{fips} gives the rows
+\[
+ (\mathtt{14},\mathtt{11},\mathtt{82},\mathtt{15},
+   \mathtt{1f},\mathtt{b6},\mathtt{4c},\mathtt{4a}).
+\]
+Composing multiplication by \(W\) with this linear map and then adding the
+constant \(\mathtt{63}\) gives the following affine masks on
+\((1,T_0,\ldots,T_7)\):
+\begin{center}
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+\(S_0\)&\(S_1\)&\(S_2\)&\(S_3\)&\(S_4\)&\(S_5\)&\(S_6\)&\(S_7\)\\
+\midrule
+\(\mathtt{078}\)&\(\mathtt{067}\)&\(\mathtt{083}\)&\(\mathtt{07e}\)&
+\(\mathtt{074}\)&\(\mathtt{0da}\)&\(\mathtt{191}\)&\(\mathtt{18b}\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+After expressing the \(T_i\) on the complete XAG basis, these become
+\begin{center}
+\begin{tabular}{@{}cc@{\qquad}cc@{}}
+\toprule
+output&mask&output&mask\\
+\midrule
+\(S_0\)&\(\mathtt{2491ba35ce}\)&\(S_1\)&\(\mathtt{257bba3b95}\)\\
+\(S_2\)&\(\mathtt{2e6532ee01}\)&\(S_3\)&\(\mathtt{19dbba4b98}\)\\
+\(S_4\)&\(\mathtt{189eba357c}\)&\(S_5\)&\(\mathtt{c0332e152}\)\\
+\(S_6\)&\(\mathtt{db00b2bf9}\)&\(S_7\)&\(\mathtt{19b508a44b}\)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{The normalized XAG}
+
+\lstinputlisting[caption={The normalized XAG
+\texttt{certificates/aes29.xag}.},label={lst:xag}]{certificates/aes29.xag}
+
+\begin{thebibliography}{9}
+
+\bibitem{canright}
+D. Canright,
+``A Very Compact S-box for AES,''
+in \emph{Cryptographic Hardware and Embedded Systems -- CHES 2005},
+Lecture Notes in Computer Science, vol.~3659, pp.~441--455,
+Springer, 2005.
+\href{https://doi.org/10.1007/11545262_32}{doi:10.1007/11545262\_32}.
+
+\bibitem{bmp}
+J. Boyar, P. Matthews, and R. Peralta,
+``Logic Minimization Techniques with Applications to Cryptology,''
+\emph{Journal of Cryptology}, vol.~26, pp.~280--312, 2013.
+\href{https://doi.org/10.1007/s00145-012-9124-7}{doi:10.1007/s00145-012-9124-7}.
+
+\bibitem{fips}
+National Institute of Standards and Technology,
+\emph{Advanced Encryption Standard (AES)},
+NIST FIPS 197-upd1, originally published 2001, updated 9 May 2023.
+\href{https://doi.org/10.6028/NIST.FIPS.197-upd1}{doi:10.6028/NIST.FIPS.197-upd1}.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,2 +1,5 @@
 * text=auto eol=lf
+
 *.pdf binary
+certificates/aes29.xag -text
+circuits/aes-sbox-fwd-g228-a29-d35-ad6.slp -text
