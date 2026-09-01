@@ -6,7 +6,7 @@ LATEXMK ?= latexmk
 LATEXMLC ?= latexmlc
 QPDF ?= qpdf
 
-SOURCE_DATE_EPOCH := 1787788800
+SOURCE_DATE_EPOCH := 1788220800
 FORCE_SOURCE_DATE := 1
 TZ := UTC
 
@@ -169,7 +169,7 @@ check-html: html
 	|assert download_href.startswith(prefix), "XAG download must be self-contained"
 	|assert b64decode(download_href[len(prefix):], validate=True) == xag_path.read_bytes(), "XAG download differs"
 	|text = re.sub(r"\s+", " ", "".join(parser.text))
-	|assert "12 July 2026; revised 27 August 2026" in text, "publication dates differ"
+	|assert "12 July 2026; revised 27 August and 1 September 2026" in text, "publication dates differ"
 	|assert "Download the listing ()" not in text, "anonymous listing download control found"
 	PY
 

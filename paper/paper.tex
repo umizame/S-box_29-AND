@@ -46,7 +46,7 @@
 
 \title{\bfseries An Explicit 29-AND Circuit for the AES S-box}
 \author{umizame}
-\date{12 July 2026; revised 27 August 2026}
+\date{12 July 2026; revised 27 August and 1 September 2026}
 
 \begin{document}
 \maketitle
@@ -630,6 +630,7 @@ Section~\ref{sec:identification}.  On the ordered linear input basis
 basis \((1,V_0,\ldots,V_{n-1})\), bit zero selects the constant and bit
 \(j+1\) selects \(V_j\).  All masks below are written in hexadecimal.
 
+\begin{samepage}
 The rows of the inverse map from AES polynomial coordinates to Canright's
 tower coordinates, and the corresponding rows after the scaling \(H=WG\),
 are as follows \cite[Sec.~4, Eq.~(10)]{canright}.  The
@@ -651,6 +652,7 @@ coordinate&\(G\)&\(H=WG\)\\
 \bottomrule
 \end{tabular}
 \end{center}
+\end{samepage}
 In particular,
 \begin{align*}
  L_1&=\lambda_{\mathtt{69}}W^2+\lambda_{\mathtt{e7}}W,&
@@ -658,6 +660,7 @@ In particular,
  R_1&=\lambda_{\mathtt{59}}W^2+\lambda_{\mathtt{d9}}W,&
  R_0&=\lambda_{\mathtt{74}}W^2+\lambda_{\mathtt{86}}W.
 \end{align*}
+\begin{samepage}
 The three rows of \eqref{eq:three-rows}, with their gate ranges, are
 \begin{center}
 \begin{tabular}{@{}ccccc@{}}
@@ -670,6 +673,7 @@ sum&\(L_0+WL_1\)&\(R_0+WR_1\)&\(Q_0+WQ_1\)&\(\gate{7}\text{--}\gate{9}\); \(\gat
 \bottomrule
 \end{tabular}
 \end{center}
+\end{samepage}
 The input masks for \((a,b)\) in these rows, as pairs of
 \([W^2,W]\)-coordinates, are
 \[
@@ -681,6 +685,7 @@ Within every late range, the gates are \(p_4,p_5,p_6,p_7,p_8\) in that
 order; \(p_6\) and \(p_8\) use the sheared factors displayed in the proof
 of Proposition~\ref{prop:f4-joint}.
 
+\begin{samepage}
 On the affine basis
 \((1,U_0,\ldots,U_7,\gate{1},\ldots,\gate{9})\), the coordinate masks of
 \(D\) in \eqref{eq:D-coordinates} are
@@ -696,6 +701,10 @@ coordinate&mask\\
 \bottomrule
 \end{tabular}
 \end{center}
+\end{samepage}
+\medskip
+
+\begin{samepage}
 On the basis enlarged through \(\gate{14}\), the four coordinate masks of
 \(Q\) are
 \begin{center}
@@ -710,6 +719,8 @@ coordinate&mask\\
 \bottomrule
 \end{tabular}
 \end{center}
+\end{samepage}
+\medskip
 
 For the output coordinates, write
 \begin{align*}
@@ -725,6 +736,7 @@ part of the FIPS affine map
  (\mathtt{14},\mathtt{11},\mathtt{82},\mathtt{15},
    \mathtt{1f},\mathtt{b6},\mathtt{4c},\mathtt{4a}).
 \]
+\begin{samepage}
 Composing multiplication by \(W\) with this linear map and then adding the
 constant \(\mathtt{63}\) gives the following affine masks on
 \((1,T_0,\ldots,T_7)\):
@@ -738,6 +750,9 @@ constant \(\mathtt{63}\) gives the following affine masks on
 \bottomrule
 \end{tabular}
 \end{center}
+\end{samepage}
+
+\begin{samepage}
 After expressing the \(T_i\) on the complete XAG basis, these become
 \begin{center}
 \begin{tabular}{@{}cc@{\qquad}cc@{}}
@@ -751,6 +766,7 @@ output&mask&output&mask\\
 \bottomrule
 \end{tabular}
 \end{center}
+\end{samepage}
 
 \section{The normalized XAG}
 
