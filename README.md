@@ -12,10 +12,4 @@ Verify the straight-line program and the normalized XAG against FIPS 197 with:
 python3 verify.py
 ```
 
-With LaTeXML 0.8.8, TeX Live, latexmk, and qpdf installed, regenerate the HTML and PDF with:
-
-```sh
-make
-```
-
 NIST's [Circuit Complexity list of circuits](https://csrc.nist.gov/projects/circuit-complexity/list-of-circuits) links to this straight-line program.
