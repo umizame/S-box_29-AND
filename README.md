@@ -6,10 +6,5 @@ This repository presents an explicit straight-line program for the forward AES S
 
 The construction and its proof are given in the complete [HTML paper](https://umizame.github.io/S-box_29-AND/) and [PDF](docs/paper.pdf). The corresponding [normalized XAG](certificates/aes29.xag) records the affine factors of the twenty-nine AND gates and the eight affine outputs.
 
-Verify the straight-line program and the normalized XAG against FIPS 197 with:
-
-```sh
-python3 verify.py
-```
 
 NIST's [Circuit Complexity list of circuits](https://csrc.nist.gov/projects/circuit-complexity/list-of-circuits) links to this straight-line program.
